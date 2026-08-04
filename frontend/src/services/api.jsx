@@ -38,10 +38,7 @@ const callGeminiAPI = async (messages, targetLang, mode = 'general') => {
     systemPrompt = `You are Matholy, an intelligent, empathetic, and culturally aware AI assistant fluent in ${langMeta.name} (${langMeta.native}) and 50 other major world languages. Respond in natural ${langMeta.name} with native fluency. Keep replies brief, engaging, and suitable for language learners.`;
   }
 
-  // Format history for Gemini API
   const contents = [];
-  
-  // Add system prompt as user instruction first
   contents.push({
     role: 'user',
     parts: [{ text: `System Instruction: ${systemPrompt}\n\nUnderstood? Let's start the conversation.` }]
@@ -51,7 +48,6 @@ const callGeminiAPI = async (messages, targetLang, mode = 'general') => {
     parts: [{ text: `I am ready. I will respond to the user as Matholy AI fluent in ${langMeta.name}.` }]
   });
 
-  // Map messages history
   messages.forEach((msg) => {
     contents.push({
       role: msg.role === 'user' ? 'user' : 'model',
@@ -116,7 +112,6 @@ export const getProviderStatus = async () => {
 };
 
 export const suggestTranslation = async (original, source_lang, target_lang, current_translation, suggestion) => {
-  // Store feedback/suggestions locally in localStorage
   const key = 'matholy_translation_suggestions';
   const current = JSON.parse(localStorage.getItem(key) || '[]');
   current.push({ original, source_lang, target_lang, current_translation, suggestion, timestamp: new Date() });
@@ -125,12 +120,10 @@ export const suggestTranslation = async (original, source_lang, target_lang, cur
 };
 
 export const scanDocument = async (file) => {
-  // Client-side fallback: just read text from document if it's text-like, or mock
   return { text: "Stand-alone website mode handles document scanning via direct client-side extraction. For best results in production, use raw text input." };
 };
 
 export const translateDocumentFile = async (file, target_language, source_language = 'auto') => {
-  // Standard client fallback returning a mock doc blob for standalone demo
   const content = `Translated document content for ${file.name} in ${target_language}`;
   return new Blob([content], { type: 'text/plain' });
 };
@@ -143,11 +136,9 @@ export const lookupDictionary = async (word) => {
   const cleanWord = word.trim().toLowerCase();
 
   try {
-    // 1. Fetch from English Dictionary API
     const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
     const data = res.data[0];
     
-    // Format into standard result
     return {
       word: data.word,
       phonetic: data.phonetic || (data.phonetics?.[0]?.text || ''),
@@ -158,7 +149,6 @@ export const lookupDictionary = async (word) => {
       }))
     };
   } catch (error) {
-    // 2. If English lookup fails, try translating it to English first, then lookup, then translate back
     try {
       const transToEn = await translateText(cleanWord, 'en', 'auto');
       const enWord = transToEn.translatedText.trim().toLowerCase();
@@ -166,7 +156,6 @@ export const lookupDictionary = async (word) => {
       const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(enWord)}`);
       const data = res.data[0];
 
-      // Translate the definition and phonetic back
       return {
         word: cleanWord,
         phonetic: data.phonetic || '',
@@ -230,7 +219,6 @@ export const sendMessage = async (conversation_id, content) => {
   const targetLang = conv ? conv.target_language : 'es';
   const mode = conv ? conv.mode : 'general';
 
-  // 1. Save user message
   const userMsg = {
     id: Date.now(),
     conversation_id: Number(conversation_id),
@@ -244,7 +232,6 @@ export const sendMessage = async (conversation_id, content) => {
   msgs.push(userMsg);
   saveMessagesList(msgs);
 
-  // 2. Generate response (Gemini or Simulated fallback)
   let aiContent = "";
   const apiKey = getGeminiApiKey();
 
@@ -263,7 +250,6 @@ export const sendMessage = async (conversation_id, content) => {
     aiContent = generateSimulatedReply(content, targetLang, mode);
   }
 
-  // 3. Save assistant message
   const assistantMsg = {
     id: Date.now() + 1,
     conversation_id: Number(conversation_id),
@@ -300,7 +286,6 @@ export const checkGrammar = async (text, target_language, username) => {
   if (!text || !text.trim()) return { original_text: text, language: target_language, corrections: [], score: 100 };
   
   try {
-    // Map code to LanguageTool language code (e.g. en-US, es, fr, de)
     let ltCode = target_language;
     if (target_language === 'en') ltCode = 'en-US';
 
@@ -352,7 +337,7 @@ export const addVocab = async (username, word, language, translation, example_se
     translation: translation.trim(),
     example_sentence,
     repetition_count: 0,
-    interval: 1, // 1 day
+    interval: 1,
     ease_factor: 2.5,
     last_reviewed_at: new Date().toISOString(),
     next_review_at: new Date().toISOString()
@@ -385,17 +370,14 @@ export const reviewVocab = async (vocab_id, quality_score) => {
   const item = list[itemIndex];
   const q = Number(quality_score);
 
-  // SuperMemo SM-2 Spaced Repetition Algorithm
   let repetition = item.repetition_count || 0;
   let interval = item.interval || 1;
   let ef = item.ease_factor || 2.5;
 
   if (q < 3) {
-    // Incorrect answer, reset cycle
     repetition = 0;
     interval = 1;
   } else {
-    // Correct answer, calculate next interval
     if (repetition === 0) {
       interval = 1;
     } else if (repetition === 1) {
@@ -406,11 +388,9 @@ export const reviewVocab = async (vocab_id, quality_score) => {
     repetition += 1;
   }
 
-  // Adjust Ease Factor (EF)
   ef = ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
-  ef = Math.max(1.3, ef); // EF cannot drop below 1.3
+  ef = Math.max(1.3, ef);
 
-  // Save new SRS values
   const now = new Date();
   const nextReview = new Date();
   nextReview.setDate(now.getDate() + interval);
@@ -428,14 +408,161 @@ export const reviewVocab = async (vocab_id, quality_score) => {
 };
 
 // ============================================================================
-// SPEECH SERVICES (gTTS Client Integration)
+// SPEECH SERVICES (gTTS & Web Voices Client Integration)
 // ============================================================================
+
+const STATIC_VOICES_CATALOG = [
+  // English (en)
+  { voice_id: "en-US-GuyNeural", name: "Guy (Deep Male Narrator)", provider: "EdgeTTS", language: "en", locale: "en-US", country: "United States", accent: "American", gender: "male", depth: "deep", emotion: "confident", purpose: "audiobook", storytelling_type: "Deep Male Narrator", sample_text: "Welcome to the story studio. Let us begin our journey through the deep forest." },
+  { voice_id: "en-US-JennyNeural", name: "Jenny (Warm Female Storyteller)", provider: "EdgeTTS", language: "en", locale: "en-US", country: "United States", accent: "American", gender: "female", depth: "medium", emotion: "warm", purpose: "storytelling", storytelling_type: "Warm Storyteller", sample_text: "Welcome to the story studio. Today we will explore a beautiful narrative." },
+  
+  // Spanish (es)
+  { voice_id: "es-ES-AlvaroNeural", name: "Álvaro (Natural Male)", provider: "EdgeTTS", language: "es", locale: "es-ES", country: "Spain", accent: "Castilian", gender: "male", depth: "medium", emotion: "calm", purpose: "friendly", storytelling_type: "Natural Voice", sample_text: "Bienvenido al estudio de texto a voz. Este es un breve ejemplo." },
+  { voice_id: "es-ES-ElviraNeural", name: "Elvira (Clear Female)", provider: "EdgeTTS", language: "es", locale: "es-ES", country: "Spain", accent: "Castilian", gender: "female", depth: "light", emotion: "warm", purpose: "professional", storytelling_type: "Clear Presenter", sample_text: "Bienvenido al estudio de texto a voz. Espero que disfrutes la experiencia." },
+  
+  // French (fr)
+  { voice_id: "fr-FR-HenriNeural", name: "Henri (Elegant Male)", provider: "EdgeTTS", language: "fr", locale: "fr-FR", country: "France", accent: "French", gender: "male", depth: "medium", emotion: "calm", purpose: "storytelling", storytelling_type: "Elegant Narrator", sample_text: "Bienvenue dans le studio de synthèse vocale. Voici un court extrait." },
+  { voice_id: "fr-FR-DeniseNeural", name: "Denise (Soft Female)", provider: "EdgeTTS", language: "fr", locale: "fr-FR", country: "France", accent: "French", gender: "female", depth: "light", emotion: "warm", purpose: "friendly", storytelling_type: "Soft Voice", sample_text: "Bienvenue dans le studio de synthèse vocale. Comment puis-je vous aider aujourd'hui?" },
+
+  // German (de)
+  { voice_id: "de-DE-ConradNeural", name: "Conrad (Strong Male)", provider: "EdgeTTS", language: "de", locale: "de-DE", country: "Germany", accent: "German", gender: "male", depth: "strong", emotion: "confident", purpose: "news", storytelling_type: "Strong Speaker", sample_text: "Willkommen im Text-zu-Sprache-Studio. Dies ist eine kurze Vorschau." },
+  
+  // Japanese (ja)
+  { voice_id: "ja-JP-KeitaNeural", name: "Keita (Clear Male)", provider: "EdgeTTS", language: "ja", locale: "ja-JP", country: "Japan", accent: "Japanese", gender: "male", depth: "medium", emotion: "calm", purpose: "friendly", storytelling_type: "Friendly Speaker", sample_text: "テキスト読み上げスタジオへようこそ।音声のプレビューです。" },
+  { voice_id: "ja-JP-NanamiNeural", name: "Nanami (Warm Female)", provider: "EdgeTTS", language: "ja", locale: "ja-JP", country: "Japan", accent: "Japanese", gender: "female", depth: "light", emotion: "warm", purpose: "storytelling", storytelling_type: "Warm Presenter", sample_text: "テキスト読み上げスタジオへようこそ।どうぞお楽しみください。" },
+  
+  // Hindi (hi)
+  { voice_id: "hi-IN-MadhurNeural", name: "Madhur (Fluent Male)", provider: "EdgeTTS", language: "hi", locale: "hi-IN", country: "India", accent: "Hindi", gender: "male", depth: "medium", emotion: "warm", purpose: "friendly", storytelling_type: "Fluent Speaker", sample_text: "पाठ से भाषण स्टूडियो में आपका स्वागत है। यह एक त्वरित पूर्वावलोकन है।" },
+  { voice_id: "hi-IN-SwaraNeural", name: "Swara (Soft Female)", provider: "EdgeTTS", language: "hi", locale: "hi-IN", country: "India", accent: "Hindi", gender: "female", depth: "light", emotion: "calm", purpose: "storytelling", storytelling_type: "Soft Narrator", sample_text: "पाठ से भाषण स्टूडियो में आपका स्वागत है। मुझे उम्मीद है कि आपको यह पसंद आएगा।" }
+];
+
+export const fetchVoices = async (params = {}) => {
+  const lang = params.language || 'en';
+  
+  // 1. Filter matching voices
+  let filtered = STATIC_VOICES_CATALOG.filter(v => v.language === lang);
+  
+  // 2. Dynamic Fallback Generation if language is not directly covered in static list
+  if (filtered.length === 0) {
+    const langName = DEFAULT_SUPPORTED_LANGUAGES[lang]?.name || lang;
+    filtered = [
+      {
+        voice_id: `${lang}-StandardMale`,
+        name: `${langName} Male (Standard)`,
+        provider: "EdgeTTS",
+        language: lang,
+        locale: lang,
+        country: langName,
+        accent: "Standard",
+        gender: "male",
+        depth: "medium",
+        emotion: "calm",
+        purpose: "general",
+        storytelling_type: "System Voice",
+        sample_text: `This is a sample voice preview in ${langName}.`
+      },
+      {
+        voice_id: `${lang}-StandardFemale`,
+        name: `${langName} Female (Standard)`,
+        provider: "EdgeTTS",
+        language: lang,
+        locale: lang,
+        country: langName,
+        accent: "Standard",
+        gender: "female",
+        depth: "light",
+        emotion: "warm",
+        purpose: "general",
+        storytelling_type: "System Voice",
+        sample_text: `This is a sample voice preview in ${langName}.`
+      }
+    ];
+  }
+  
+  // 3. Filter by other criteria if provided
+  if (params.gender) {
+    filtered = filtered.filter(v => v.gender === params.gender);
+  }
+  
+  return { voices: filtered };
+};
+
+export const previewVoice = async (voice_id, sample_text = null) => {
+  // Find voice in static list or parse from fallback voice_id
+  let voice = STATIC_VOICES_CATALOG.find(v => v.voice_id === voice_id);
+  let lang = 'en';
+  let text = sample_text || "Welcome to the Text-to-Speech studio. This is a preview of my voice.";
+  
+  if (voice) {
+    lang = voice.language;
+    text = sample_text || voice.sample_text;
+  } else if (voice_id && voice_id.includes('-')) {
+    lang = voice_id.split('-')[0];
+  }
+  
+  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(text)}`;
+};
+
+export const synthesizeAdvancedSpeech = async (payload) => {
+  const voiceId = payload.voice_id || 'en-US-GuyNeural';
+  let voice = STATIC_VOICES_CATALOG.find(v => v.voice_id === voiceId);
+  let lang = 'en';
+  
+  if (voice) {
+    lang = voice.language;
+  } else if (voiceId.includes('-')) {
+    lang = voiceId.split('-')[0];
+  }
+
+  const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(payload.text)}`;
+  
+  // Save to local storage history
+  const historyKey = `matholy_tts_history_${payload.username || 'default_user'}`;
+  const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+  
+  const newHistoryItem = {
+    id: Date.now(),
+    filename: `speech_${Date.now()}.mp3`,
+    text: payload.text,
+    text_preview: payload.text.length > 50 ? payload.text.substring(0, 50) + '...' : payload.text,
+    voice_id: voiceId,
+    voice_name: voice ? voice.name : voiceId,
+    language: lang,
+    created_at: new Date().toISOString(),
+    audio_url: audioUrl
+  };
+  
+  history.unshift(newHistoryItem); // Add to beginning of history list
+  localStorage.setItem(historyKey, JSON.stringify(history));
+
+  return {
+    status: "success",
+    filename: newHistoryItem.filename,
+    audio_url: audioUrl
+  };
+};
+
+export const fetchAudioHistory = async (username) => {
+  const historyKey = `matholy_tts_history_${username || 'default_user'}`;
+  const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+  return { history };
+};
+
+export const deleteAudioHistory = async (filename) => {
+  // Find and remove from local storage history across all users
+  for (let key in localStorage) {
+    if (key.startsWith('matholy_tts_history_')) {
+      const history = JSON.parse(localStorage.getItem(key) || '[]');
+      const filtered = history.filter(item => item.filename !== filename);
+      localStorage.setItem(key, JSON.stringify(filtered));
+    }
+  }
+  return { status: "success" };
+};
 
 export const textToSpeech = async (text, language) => {
   if (!text || !text.trim()) return '';
-  // Query Google Translate's public TTS service directly from the browser
-  const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${language}&client=tw-ob&q=${encodeURIComponent(text)}`;
-  return url;
+  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${language}&client=tw-ob&q=${encodeURIComponent(text)}`;
 };
 
 export const speechToText = async (audioBlob, target_language = null) => {
@@ -443,34 +570,6 @@ export const speechToText = async (audioBlob, target_language = null) => {
     text: "Standalone voice input is processed via browser SpeechRecognition. Tap speak and dictate.",
     detected_language: target_language || 'en'
   };
-};
-
-export const fetchVoices = async (params = {}) => {
-  // Returns browser synthesized voices list or mock voices list
-  return [
-    { voice_id: "google_voice", name: "Google Natural Voice", languageCode: "en", gender: "FEMALE" },
-    { voice_id: "system_voice", name: "System Default Voice", languageCode: "es", gender: "MALE" }
-  ];
-};
-
-export const synthesizeAdvancedSpeech = async (payload) => {
-  return {
-    status: "success",
-    audio_url: `https://translate.google.com/translate_tts?ie=UTF-8&tl=${payload.language || 'en'}&client=tw-ob&q=${encodeURIComponent(payload.text)}`
-  };
-};
-
-export const previewVoice = async (voice_id, sample_text = null) => {
-  const text = sample_text || "Hello, this is a premium voice sample.";
-  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(text)}`;
-};
-
-export const fetchAudioHistory = async (username) => {
-  return { history: [] };
-};
-
-export const deleteAudioHistory = async (filename) => {
-  return { status: "success" };
 };
 
 export const submitFeedback = async (message_id, username, rating, feedback_text = null, suggested_correction = null) => {

@@ -129,10 +129,10 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
         username: username
       });
 
-      if (result && result.filename) {
-        const audioApiUrl = `http://localhost:8000/api/v1/speech/download/${result.filename}`;
+      if (result) {
+        const audioApiUrl = result.audio_url || `http://localhost:8000/api/v1/speech/download/${result.filename}`;
         setGeneratedAudioUrl(audioApiUrl);
-        setGeneratedFilename(result.filename);
+        setGeneratedFilename(result.filename || 'speech.mp3');
         loadHistory();
       }
     } catch (err) {
@@ -544,7 +544,7 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
                   <span style={{ color: '#6b7280', fontSize: '10px' }}>{item.voice_name} • {item.created_at?.slice(0, 10)}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <a href={`http://localhost:8000/api/v1/speech/download/${item.filename}`} download={item.filename} style={{ color: '#60a5fa', textDecoration: 'none' }}>Download</a>
+                  <a href={item.audio_url || `http://localhost:8000/api/v1/speech/download/${item.filename}`} target="_blank" rel="noopener noreferrer" download={item.filename} style={{ color: '#60a5fa', textDecoration: 'none' }}>Download</a>
                   <button onClick={() => handleDeleteHistoryItem(item.filename)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
                 </div>
               </div>
