@@ -1,0 +1,41 @@
+# Core Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+pydantic-settings>=2.0.0
+
+# Database
+sqlalchemy>=2.0.0
+aiosqlite>=0.19.0
+
+# Translation Providers
+argostranslate>=1.9.0
+httpx>=0.25.0
+
+# NLP & Language Detection
+langdetect>=1.0.9
+
+# Text-to-Speech
+gTTS>=2.4.0
+
+# File Processing
+python-multipart>=0.0.6
+aiofiles>=23.2.1
+python-docx>=1.1.0
+
+# Utilities
+numpy>=1.24.0
+
+# Optional GPU Dependencies (uncomment if CUDA GPU available)
+# torch>=2.1.0
+# transformers>=4.36.0
+# accelerate>=0.25.0
+# peft>=0.7.0
+# bitsandbytes>=0.41.3
+# sentencepiece>=0.1.99
+# protobuf>=4.25.0
+# openai-whisper>=20231117
+
+# Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
