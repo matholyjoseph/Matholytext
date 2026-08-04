@@ -77,7 +77,7 @@ function App() {
   ];
 
   return (
-    <div className="app-container">
+    <div className="app-container" style={{ position: 'relative' }}>
       <header
         className="glass-panel"
         style={{
@@ -215,113 +215,113 @@ function App() {
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
+      </header>
 
-        {/* Collapsible Mobile Menu Drawer */}
-        {isMobileMenuOpen && (
+      {/* Collapsible Mobile Menu Drawer - Outside of header to prevent flex clipping in mobile Safari */}
+      {isMobileMenuOpen && (
+        <div
+          className="mobile-menu-drawer glass-panel"
+          style={{
+            position: 'absolute',
+            top: '72px',
+            left: '8px',
+            right: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            padding: '12px',
+            background: 'rgba(9, 13, 22, 0.98)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)',
+            borderRadius: '12px',
+            zIndex: 200,
+          }}
+        >
+          {/* Current active tab indicator */}
           <div
-            className="mobile-menu-drawer glass-panel"
             style={{
-              position: 'absolute',
-              top: 'calc(100% + 8px)',
-              left: 0,
-              right: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-              padding: '12px',
-              background: 'rgba(9, 13, 22, 0.98)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)',
-              borderRadius: '12px',
-              zIndex: 200,
+              fontSize: '11px',
+              color: '#6b7280',
+              paddingBottom: '6px',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              marginBottom: '4px',
+              fontWeight: 500,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
             }}
           >
-            {/* Current active tab indicator */}
-            <div
-              style={{
-                fontSize: '11px',
-                color: '#6b7280',
-                paddingBottom: '6px',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
-                marginBottom: '4px',
-                fontWeight: 500,
-                letterSpacing: '0.5px',
-                textTransform: 'uppercase',
-              }}
-            >
-              Navigation
-            </div>
-            {menuItems.map((m) => {
-              const Icon = m.icon;
-              const isActive = activeTab === m.id;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(m.id);
-                    setIsMobileMenuOpen(false);
-                    if (m.id === 'general' && messages.length === 0) {
-                      startNewConversation(selectedLang, 'general');
-                    }
-                  }}
+            Navigation
+          </div>
+          {menuItems.map((m) => {
+            const Icon = m.icon;
+            const isActive = activeTab === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(m.id);
+                  setIsMobileMenuOpen(false);
+                  if (m.id === 'general' && messages.length === 0) {
+                    startNewConversation(selectedLang, 'general');
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '13px 16px',
+                  borderRadius: '10px',
+                  border: isActive ? '1px solid rgba(59,130,246,0.4)' : '1px solid transparent',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: isActive
+                    ? 'linear-gradient(135deg, rgba(16,185,129,0.25), rgba(59,130,246,0.25))'
+                    : 'rgba(255, 255, 255, 0.04)',
+                  color: isActive ? '#fff' : '#d1d5db',
+                  textAlign: 'left',
+                  width: '100%',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <div
                   style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: isActive
+                      ? 'linear-gradient(135deg, #10b981, #3b82f6)'
+                      : 'rgba(255,255,255,0.08)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    padding: '13px 16px',
-                    borderRadius: '10px',
-                    border: isActive ? '1px solid rgba(59,130,246,0.4)' : '1px solid transparent',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    background: isActive
-                      ? 'linear-gradient(135deg, rgba(16,185,129,0.25), rgba(59,130,246,0.25))'
-                      : 'rgba(255, 255, 255, 0.04)',
-                    color: isActive ? '#fff' : '#d1d5db',
-                    textAlign: 'left',
-                    width: '100%',
-                    transition: 'all 0.15s ease',
+                    justifyContent: 'center',
+                    flexShrink: 0,
                   }}
                 >
-                  <div
+                  <Icon size={16} color={isActive ? '#fff' : '#9ca3af'} />
+                </div>
+                <span>{m.label}</span>
+                {isActive && (
+                  <span
                     style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      background: isActive
-                        ? 'linear-gradient(135deg, #10b981, #3b82f6)'
-                        : 'rgba(255,255,255,0.08)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
+                      marginLeft: 'auto',
+                      fontSize: '10px',
+                      color: '#10b981',
+                      fontWeight: 700,
+                      background: 'rgba(16,185,129,0.15)',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
                     }}
                   >
-                    <Icon size={16} color={isActive ? '#fff' : '#9ca3af'} />
-                  </div>
-                  <span>{m.label}</span>
-                  {isActive && (
-                    <span
-                      style={{
-                        marginLeft: 'auto',
-                        fontSize: '10px',
-                        color: '#10b981',
-                        fontWeight: 700,
-                        background: 'rgba(16,185,129,0.15)',
-                        padding: '2px 8px',
-                        borderRadius: '10px',
-                      }}
-                    >
-                      ACTIVE
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </header>
+                    ACTIVE
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Main Workspace Area */}
       <main className="app-main-layout">

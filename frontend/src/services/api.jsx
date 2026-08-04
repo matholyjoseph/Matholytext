@@ -40,7 +40,6 @@ export const suggestTranslation = async (original, source_lang, target_lang, cur
   return res.data;
 };
 
-
 export const scanDocument = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -132,7 +131,6 @@ export const submitFeedback = async (message_id, username, rating, feedback_text
   return res.data;
 };
 
-// Text-to-Speech Studio API Services
 export const fetchVoices = async (params = {}) => {
   const query = new URLSearchParams(params).toString();
   const res = await axios.get(`${API_BASE}/speech/voices?${query}`);
