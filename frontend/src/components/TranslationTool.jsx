@@ -443,7 +443,7 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flex: 1 }}>
+          <div className="responsive-grid" style={{ flex: 1 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500 }}>

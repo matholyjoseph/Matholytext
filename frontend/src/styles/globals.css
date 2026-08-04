@@ -190,3 +190,47 @@ button {
 .script-hebrew {
   font-family: 'Noto Sans Hebrew', 'Segoe UI', var(--font-family);
 }
+
+/* Responsive Grid & Mobile Helper Utilities */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  /* Hide desktop menu items and show mobile hamburger toggler */
+  .desktop-menu-bar {
+    display: none !important;
+  }
+  .mobile-menu-toggle-btn {
+    display: block !important;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Force responsive layouts to stack vertically */
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* App container adjustments */
+  .app-container {
+    padding: 8px 10px !important;
+    gap: 10px !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  .app-main-layout {
+    flex-direction: column !important;
+    overflow-y: visible !important;
+  }
+
+  .glass-panel {
+    padding: 16px !important;
+  }
+}
+

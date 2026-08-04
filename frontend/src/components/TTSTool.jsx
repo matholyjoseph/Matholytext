@@ -245,7 +245,7 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
       </div>
 
       {/* Main Grid: Input & Voice Browser */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="responsive-grid">
         {/* Left Column: Text Input & Speech Controls */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
