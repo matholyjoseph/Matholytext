@@ -90,13 +90,14 @@ export const detectLanguage = async (text) => {
 };
 
 export const translateText = async (text, target_lang, source_lang = null) => {
-  if (!text || !text.trim()) return { translatedText: '', provider: 'none' };
+  if (!text || !text.trim()) return { translatedText: '', translated_text: '', provider: 'none' };
   try {
     const sLang = source_lang || 'auto';
     const res = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sLang}|${target_lang}`);
     const translatedText = res.data.responseData.translatedText;
     return {
       translatedText: translatedText,
+      translated_text: translatedText,
       source_lang: sLang,
       target_lang,
       provider: 'MyMemory Free Translation',
