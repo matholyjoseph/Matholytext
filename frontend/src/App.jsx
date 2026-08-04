@@ -6,9 +6,9 @@ import TranslationTool from './components/TranslationTool';
 import GrammarTool from './components/GrammarTool';
 import DictionaryTool from './components/DictionaryTool';
 import TTSTool from './components/TTSTool';
-import { fetchSupportedLanguages, createConversation, sendMessage } from './services/api';
+import { fetchSupportedLanguages, createConversation, sendMessage, getGeminiApiKey, setGeminiApiKey } from './services/api';
 import { DEFAULT_SUPPORTED_LANGUAGES } from './services/languages';
-import { Globe, MessageSquare, BookOpen, Repeat, Search, Volume2, Menu, X } from 'lucide-react';
+import { Globe, MessageSquare, BookOpen, Repeat, Search, Volume2, Menu, X, Settings } from 'lucide-react';
 import './styles/globals.css';
 
 function App() {
@@ -21,6 +21,10 @@ function App() {
   const [ttsInputText, setTtsInputText] = useState('');
   const [ttsInputLang, setTtsInputLang] = useState('en');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Stand-alone Settings Modal States
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
 
   useEffect(() => {
     initApp();
@@ -181,8 +185,29 @@ function App() {
           })}
         </nav>
 
-        {/* Right side: Language Selector + Mobile Hamburger */}
+        {/* Right side: Language Selector + Settings + Mobile Hamburger */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '10px',
+              borderRadius: '10px',
+              background: getGeminiApiKey() ? 'rgba(96, 165, 250, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+              border: getGeminiApiKey() ? '1px solid rgba(96, 165, 250, 0.4)' : '1px solid rgba(255, 255, 255, 0.15)',
+              color: getGeminiApiKey() ? '#60a5fa' : '#fff',
+              cursor: 'pointer',
+              minWidth: '40px',
+              minHeight: '40px',
+              transition: 'all 0.2s ease',
+            }}
+            title="Configure Gemini AI Key"
+          >
+            <Settings size={18} className={getGeminiApiKey() ? "" : "animate-pulse"} />
+          </button>
+
           <LanguageSelector
             languages={languages}
             selectedLang={selectedLang}
@@ -378,6 +403,110 @@ function App() {
           languages={languages}
         />
       </main>
+
+      {/* Standalone Gemini settings modal */}
+      {isSettingsOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '16px',
+        }}>
+          <div className="glass-panel" style={{
+            width: '100%',
+            maxWidth: '440px',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            position: 'relative',
+          }}>
+            <button 
+              onClick={() => setIsSettingsOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'transparent',
+                border: 'none',
+                color: '#9ca3af',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Settings size={20} color="#60a5fa" />
+              <span>Gemini AI Configuration</span>
+            </h3>
+
+            <p style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.5' }}>
+              To enable real, fluent AI conversation and tutoring in 51 languages, paste your free Google Gemini API Key below.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: '#60a5fa' }}>Google Gemini API Key</label>
+              <input
+                type="password"
+                placeholder="AIzaSy..."
+                value={geminiKey}
+                onChange={(e) => setGeminiKey(e.target.value)}
+                style={{
+                  background: 'rgba(15, 23, 42, 0.8)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  outline: 'none',
+                  width: '100%',
+                }}
+              />
+              <a 
+                href="https://aistudio.google.com/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                style={{ fontSize: '11px', color: '#38bdf8', textDecoration: 'none', alignSelf: 'flex-start', marginTop: '2px' }}
+              >
+                🔗 Get a free Gemini API Key from Google AI Studio →
+              </a>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <button 
+                onClick={() => {
+                  setGeminiApiKey(geminiKey);
+                  setIsSettingsOpen(false);
+                }} 
+                className="glow-btn"
+                style={{ flex: 1, padding: '10px', minHeight: '40px' }}
+              >
+                Save &amp; Connect AI
+              </button>
+              <button 
+                onClick={() => {
+                  setGeminiKey('');
+                  setGeminiApiKey('');
+                  setIsSettingsOpen(false);
+                }}
+                className="icon-action-btn"
+                style={{ padding: '10px 14px', minHeight: '40px' }}
+              >
+                Clear Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
