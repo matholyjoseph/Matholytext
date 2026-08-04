@@ -300,7 +300,6 @@ button {
   /* Prevent horizontal overflow on any element */
   .app-container,
   .app-main-layout,
-  .glass-panel,
   .tool-content-panel {
     max-width: 100vw;
     overflow-x: hidden;

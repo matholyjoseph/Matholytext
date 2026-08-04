@@ -78,7 +78,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Top Navbar */}
       <header
         className="glass-panel"
         style={{
@@ -90,6 +89,7 @@ function App() {
           zIndex: 50,
           gap: '10px',
           flexShrink: 0,
+          overflow: 'visible',
         }}
       >
         {/* Logo + Title */}
