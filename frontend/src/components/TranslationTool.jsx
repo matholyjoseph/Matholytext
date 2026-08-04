@@ -99,7 +99,7 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
     setIsLoadingDict(true);
 
     try {
-      const res = await lookupDictionary(q);
+      const res = await lookupDictionary(q, targetLang);
       setDictResult(res);
     } catch (e) {
       console.warn("Dictionary lookup fallback:", e);
@@ -287,8 +287,8 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
       const blob = await translateDocumentFile(selectedFile, targetLang, sourceLang);
       setTranslatedDocBlob(blob);
       const baseName = (selectedFile?.name || "document").replace(/\.[^/.]+$/, "");
-      setDownloadFilename(`${baseName}_translated_${targetLang}.docx`);
-      setDownloadExtension('.docx');
+      setDownloadFilename(`${baseName}_translated_${targetLang}.txt`);
+      setDownloadExtension('.txt');
     } catch (err) {
       console.warn("API DOCX endpoint error:", err);
       setError(err.response?.data?.detail || err.message || 'Document translation failed.');

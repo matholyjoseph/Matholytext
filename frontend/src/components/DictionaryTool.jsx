@@ -21,7 +21,7 @@ const DictionaryTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang 
     setError(null);
     setSearchResult(null);
     try {
-      const data = await lookupDictionary(query);
+      const data = await lookupDictionary(query, selectedLang);
       if (data && (data.found || data.translations || data.word)) {
         setSearchResult(data);
       } else {

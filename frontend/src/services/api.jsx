@@ -124,14 +124,38 @@ export const scanDocument = async (file) => {
 };
 
 export const translateDocumentFile = async (file, target_language, source_language = 'auto') => {
-  const content = `Translated document content for ${file.name} in ${target_language}`;
-  return new Blob([content], { type: 'text/plain' });
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve(new Blob(["No file selected"], { type: 'text/plain;charset=utf-8' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target.result;
+        if (!text || !text.trim()) {
+          resolve(new Blob(["Empty document upload"], { type: 'text/plain;charset=utf-8' }));
+          return;
+        }
+        // Translate the extracted text using MyMemory
+        const translationRes = await translateText(text, target_language, source_language);
+        const translatedContent = translationRes.translatedText || text;
+        
+        const blob = new Blob([translatedContent], { type: 'text/plain;charset=utf-8' });
+        resolve(blob);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsText(file);
+  });
 };
 
 // ============================================================================
 // DICTIONARY SERVICE (Multi-Language Client-Side API)
 // ============================================================================
-export const lookupDictionary = async (word) => {
+export const lookupDictionary = async (word, targetLang = 'en') => {
   if (!word || !word.trim()) return null;
   const cleanWord = word.trim().toLowerCase();
 
@@ -139,14 +163,31 @@ export const lookupDictionary = async (word) => {
     const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
     const data = res.data[0];
     
+    // Translate meanings' definitions to targetLang if not 'en'
+    const translatedMeanings = await Promise.all(data.meanings.map(async (m) => {
+      const rawDef = m.definitions?.[0]?.definition || '';
+      let translatedDef = rawDef;
+      
+      if (targetLang && targetLang !== 'en') {
+        try {
+          const trans = await translateText(rawDef, targetLang, 'en');
+          translatedDef = trans.translatedText || rawDef;
+        } catch (e) {
+          console.warn("Failed to translate definition:", e);
+        }
+      }
+      
+      return {
+        partOfSpeech: m.partOfSpeech,
+        definition: translatedDef,
+        example: m.definitions?.[0]?.example || ''
+      };
+    }));
+
     return {
       word: data.word,
       phonetic: data.phonetic || (data.phonetics?.[0]?.text || ''),
-      meanings: data.meanings.map(m => ({
-        partOfSpeech: m.partOfSpeech,
-        definition: m.definitions?.[0]?.definition || '',
-        example: m.definitions?.[0]?.example || ''
-      }))
+      meanings: translatedMeanings
     };
   } catch (error) {
     try {
@@ -156,14 +197,31 @@ export const lookupDictionary = async (word) => {
       const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(enWord)}`);
       const data = res.data[0];
 
+      // Translate the English definition to targetLang
+      const translatedMeanings = await Promise.all(data.meanings.map(async (m) => {
+        const rawDef = m.definitions?.[0]?.definition || '';
+        let translatedDef = rawDef;
+        
+        if (targetLang && targetLang !== 'en') {
+          try {
+            const trans = await translateText(rawDef, targetLang, 'en');
+            translatedDef = trans.translatedText || rawDef;
+          } catch (e) {
+            console.warn("Failed to translate definition:", e);
+          }
+        }
+        
+        return {
+          partOfSpeech: m.partOfSpeech,
+          definition: `(${enWord.toUpperCase()}) ` + translatedDef,
+          example: m.definitions?.[0]?.example || ''
+        };
+      }));
+
       return {
         word: cleanWord,
         phonetic: data.phonetic || '',
-        meanings: data.meanings.map(m => ({
-          partOfSpeech: m.partOfSpeech,
-          definition: `[EN: ${data.word}] ` + (m.definitions?.[0]?.definition || ''),
-          example: m.definitions?.[0]?.example || ''
-        }))
+        meanings: translatedMeanings
       };
     } catch (e2) {
       throw new Error(`Word '${word}' not found in dictionary.`);

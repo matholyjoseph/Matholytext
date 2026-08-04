@@ -483,7 +483,7 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
       {/* Hidden persistent audio element for mobile browser compatibility */}
       <audio 
         ref={audioRef}
-        src={generatedAudioUrl || ''}
+        {...(generatedAudioUrl ? { src: generatedAudioUrl } : {})}
         onTimeUpdate={handleTimeUpdate}
         onEnded={() => setIsPlaying(false)}
       />
