@@ -69,7 +69,7 @@ const DictionaryTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang 
   const sampleWords = ["hello", "welcome", "knowledge", "language", "freedom", "friendship", "love", "peace"];
 
   return (
-    <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', gap: '20px', overflowY: 'auto' }}>
+    <div className="glass-panel tool-content-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', minWidth: 0 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

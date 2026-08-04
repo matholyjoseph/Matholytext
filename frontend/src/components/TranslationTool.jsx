@@ -322,26 +322,26 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
   const targetMeta = activeLangs[targetLang] || { name: 'Spanish', flag: '🇪🇸', native: 'Español' };
 
   return (
-    <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', gap: '20px', overflowY: 'auto' }}>
+    <div className="glass-panel tool-content-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', minWidth: 0 }}>
       {/* Top Header & Mode Switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', padding: '10px', borderRadius: '12px' }}>
-            <Sparkles size={20} color="#fff" />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+          <div style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', padding: '8px', borderRadius: '10px', flexShrink: 0 }}>
+            <Sparkles size={18} color="#fff" />
           </div>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Neural Translation Studio & Integrated Dictionary</h2>
-            <p style={{ fontSize: '12px', color: '#9ca3af' }}>Text & DOCX Document Translation + IPA Dictionary Access across 51 world languages</p>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>Translation Studio</h2>
+            <p className="hide-mobile" style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>Text & DOCX • IPA Dictionary • 51 languages</p>
           </div>
         </div>
 
         {/* Sub-tabs */}
-        <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', padding: '4px', borderRadius: '10px', gap: '4px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', padding: '3px', borderRadius: '9px', gap: '3px', border: '1px solid rgba(255, 255, 255, 0.1)', flexShrink: 0 }}>
           <button
             onClick={() => setTranslationMode('text')}
             style={{
-              padding: '6px 14px',
-              borderRadius: '8px',
+              padding: '6px 12px',
+              borderRadius: '7px',
               border: 'none',
               fontSize: '12px',
               fontWeight: 600,
@@ -350,16 +350,17 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
               color: translationMode === 'text' ? '#fff' : '#9ca3af',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '5px',
+              whiteSpace: 'nowrap',
             }}
           >
-            <FileType size={14} /> Text Mode
+            <FileType size={13} /> Text
           </button>
           <button
             onClick={() => setTranslationMode('doc')}
             style={{
-              padding: '6px 14px',
-              borderRadius: '8px',
+              padding: '6px 12px',
+              borderRadius: '7px',
               border: 'none',
               fontSize: '12px',
               fontWeight: 600,
@@ -368,10 +369,11 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
               color: translationMode === 'doc' ? '#fff' : '#9ca3af',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '5px',
+              whiteSpace: 'nowrap',
             }}
           >
-            <FileText size={14} /> DOCX Document Mode
+            <FileText size={13} /> DOCX
           </button>
         </div>
       </div>
@@ -379,10 +381,10 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
       {/* TEXT TRANSLATION MODE */}
       {translationMode === 'text' && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '220px' }}>
+          <div className="lang-pair-row" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '140px' }}>
               <label style={{ fontSize: '11px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>Source Language</label>
-              <select 
+              <select
                 value={sourceLang}
                 onChange={(e) => setSourceLang(e.target.value)}
                 style={{
@@ -390,7 +392,7 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
                   background: 'rgba(30, 41, 59, 0.95)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '10px',
-                  padding: '10px 14px',
+                  padding: '9px 12px',
                   color: '#fff',
                   fontSize: '14px',
                   fontWeight: 500,
@@ -398,7 +400,7 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
                   cursor: 'pointer'
                 }}
               >
-                <option value="auto">✨ Auto Detect Language</option>
+                <option value="auto">✨ Auto Detect</option>
                 {Object.entries(activeLangs).map(([code, meta]) => (
                   <option key={code} value={code}>
                     {meta.flag} {meta.name} ({meta.native})
@@ -407,18 +409,18 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
               </select>
             </div>
 
-            <button 
+            <button
               onClick={handleSwapText}
               className="icon-action-btn"
               title="Swap languages"
-              style={{ padding: '10px 14px', borderRadius: '10px', marginTop: '16px' }}
+              style={{ padding: '9px 12px', borderRadius: '10px', flexShrink: 0, marginBottom: '1px' }}
             >
-              <ArrowLeftRight size={18} />
+              <ArrowLeftRight size={16} />
             </button>
 
-            <div style={{ flex: 1, minWidth: '220px' }}>
-              <label style={{ fontSize: '11px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>Target Language (51 Languages)</label>
-              <select 
+            <div style={{ flex: 1, minWidth: '140px' }}>
+              <label style={{ fontSize: '11px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>Target Language</label>
+              <select
                 value={targetLang}
                 onChange={(e) => setTargetLang(e.target.value)}
                 style={{
@@ -426,7 +428,7 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
                   background: 'rgba(30, 41, 59, 0.95)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '10px',
-                  padding: '10px 14px',
+                  padding: '9px 12px',
                   color: '#fff',
                   fontSize: '14px',
                   fontWeight: 500,
@@ -445,7 +447,7 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
 
           <div className="responsive-grid" style={{ flex: 1 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                 <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500 }}>
                   Input Text ({sourceMeta.name}) {detectedMeta && <span style={{ color: '#c084fc' }}>(Detected: {detectedMeta.name})</span>}
                 </span>
@@ -453,41 +455,42 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
               </div>
 
               {error && (
-                <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '10px', color: '#fca5a5', fontSize: '14px' }}>
+                <div style={{ padding: '10px 12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '10px', color: '#fca5a5', fontSize: '13px' }}>
                   {error}
                 </div>
               )}
 
-              <textarea 
-                placeholder={`Paste or enter text... (Auto-detects language on paste)`}
+              <textarea
+                placeholder="Paste or enter text... (Auto-detects language on paste)"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onPaste={handlePasteText}
                 dir={['ar', 'he', 'ur', 'fa'].includes(sourceLang) ? 'rtl' : 'auto'}
                 style={{
                   flex: 1,
-                  minHeight: '180px',
+                  minHeight: '150px',
                   background: 'rgba(15, 23, 42, 0.8)',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   borderRadius: '12px',
-                  padding: '14px',
+                  padding: '12px 14px',
                   color: '#fff',
                   fontSize: '14px',
                   lineHeight: '1.6',
                   resize: 'none',
-                  outline: 'none'
+                  outline: 'none',
+                  width: '100%',
                 }}
               />
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                <button 
-                  onClick={handleTranslateText} 
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleTranslateText}
                   disabled={isLoadingText || !inputText.trim()}
                   className="glow-btn"
-                  style={{ flex: 1, padding: '12px' }}
+                  style={{ flex: 1, minWidth: '120px', padding: '10px 12px' }}
                 >
                   {isLoadingText ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  <span>{isLoadingText ? 'Translating...' : `Translate to ${targetMeta.name}`}</span>
+                  <span>{isLoadingText ? 'Translating...' : `Translate → ${targetMeta.name}`}</span>
                 </button>
 
                 <button
@@ -497,85 +500,87 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
                     background: 'rgba(16, 185, 129, 0.2)',
                     border: '1px solid rgba(16, 185, 129, 0.4)',
                     color: '#34d399',
-                    padding: '12px 16px',
+                    padding: '10px 12px',
                     borderRadius: '12px',
                     fontSize: '13px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    flexShrink: 0,
                   }}
                 >
-                  <BookOpen size={16} />
-                  <span>Lookup Word in Dictionary</span>
+                  <BookOpen size={15} />
+                  <span>Dict</span>
                 </button>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                 <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500 }}>
                   Target Output ({targetMeta.flag} {targetMeta.name})
                 </span>
                 {translationProvider && (
                   <span style={{ fontSize: '11px', color: '#9ca3af', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>
-                    Translated by {translationProvider}
+                    via {translationProvider}
                   </span>
                 )}
               </div>
 
-              <div 
+              <div
                 style={{
                   flex: 1,
-                  minHeight: '180px',
+                  minHeight: '150px',
                   background: 'rgba(30, 41, 59, 0.6)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '12px',
-                  padding: '14px',
+                  padding: '12px 14px',
                   color: translatedText ? '#fff' : '#9ca3af',
                   fontSize: '15px',
                   lineHeight: '1.6',
                   userSelect: 'text',
                   direction: targetMeta.dir === 'rtl' ? 'rtl' : 'ltr',
-                  textAlign: targetMeta.dir === 'rtl' ? 'right' : 'left'
+                  textAlign: targetMeta.dir === 'rtl' ? 'right' : 'left',
+                  wordBreak: 'break-word',
                 }}
               >
-                {translatedText || "Translation output will appear here..."}
+                {translatedText || 'Translation output will appear here...'}
               </div>
 
               {translatedText && (
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                  <button 
-                    onClick={() => speakText(translatedText, targetLang)} 
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  <button
+                    onClick={() => speakText(translatedText, targetLang)}
                     className="icon-action-btn"
                     style={{ background: isPlayingAudio ? 'rgba(236, 72, 153, 0.25)' : 'rgba(255, 255, 255, 0.06)', border: isPlayingAudio ? '1px solid #ec4899' : '1px solid rgba(255, 255, 255, 0.1)' }}
                   >
-                    {isPlayingAudio ? <VolumeX size={15} color="#ec4899" /> : <Volume2 size={15} color="#38bdf8" />}
+                    {isPlayingAudio ? <VolumeX size={14} color="#ec4899" /> : <Volume2 size={14} color="#38bdf8" />}
                     <span style={{ color: isPlayingAudio ? '#ec4899' : '#fff', fontWeight: 600 }}>
-                      {isPlayingAudio ? 'Stop Speaking' : '🔊 Quick Speak'}
+                      {isPlayingAudio ? 'Stop' : 'Speak'}
                     </span>
                   </button>
 
                   {onOpenTTS && (
-                    <button 
+                    <button
                       onClick={() => onOpenTTS(translatedText, targetLang)}
                       className="icon-action-btn"
                       style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2))', border: '1px solid rgba(16, 185, 129, 0.5)', color: '#34d399', fontWeight: 600 }}
                     >
-                      <Sparkles size={15} />
-                      <span>Open in TTS Studio</span>
+                      <Sparkles size={14} />
+                      <span>TTS Studio</span>
                     </button>
                   )}
 
                   <button onClick={handleCopyText} className="icon-action-btn">
-                    {isCopied ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
-                    <span>{isCopied ? 'Copied!' : 'Copy Text'}</span>
+                    {isCopied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                    <span>{isCopied ? 'Copied!' : 'Copy'}</span>
                   </button>
 
                   <button onClick={handleSuggestTranslation} className="icon-action-btn">
-                    <Sparkles size={15} color="#fcd34d" />
-                    <span>Suggest better translation</span>
+                    <Sparkles size={14} color="#fcd34d" />
+                    <span>Suggest</span>
                   </button>
 
                   <button onClick={handleSaveToVocab} className="icon-action-btn">

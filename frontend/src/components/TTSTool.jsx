@@ -207,38 +207,40 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
   const charCount = inputText.length;
 
   return (
-    <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', gap: '24px', overflowY: 'auto' }}>
+    <div className="glass-panel tool-content-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', minWidth: 0 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', padding: '10px', borderRadius: '12px' }}>
-            <Volume2 size={22} color="#fff" />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+          <div style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', padding: '8px', borderRadius: '10px', flexShrink: 0 }}>
+            <Volume2 size={18} color="#fff" />
           </div>
-          <div>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#fff' }}>Neural Text-to-Speech Studio</h2>
-            <p style={{ fontSize: '12px', color: '#9ca3af' }}>Convert text, stories, and translated documents into natural human-like speech</p>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>TTS Studio</h2>
+            <p className="hide-mobile" style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>Natural neural voices • 51 languages • Download audio</p>
           </div>
         </div>
 
-        {/* Target Language Selector */}
-        <select 
+        {/* Language Selector */}
+        <select
           value={selectedLang}
           onChange={(e) => setSelectedLang(e.target.value)}
           style={{
             background: 'rgba(30, 41, 59, 0.95)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             borderRadius: '10px',
-            padding: '10px 16px',
+            padding: '8px 12px',
             color: '#fff',
-            fontSize: '14px',
+            fontSize: '13px',
             fontWeight: 600,
             outline: 'none',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            flexShrink: 0,
+            maxWidth: '160px',
           }}
         >
           {Object.entries(activeLangs).map(([code, meta]) => (
             <option key={code} value={code}>
-              {meta.flag} {meta.name} ({meta.native})
+              {meta.flag} {meta.name}
             </option>
           ))}
         </select>

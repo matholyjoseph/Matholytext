@@ -106,37 +106,39 @@ const GrammarTool = ({ languages, selectedLang, username }) => {
   const langMeta = languages[targetLang] || { name: 'English', flag: '🇬🇧' };
 
   return (
-    <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', gap: '20px', overflowY: 'auto' }}>
+    <div className="glass-panel tool-content-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', minWidth: 0 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', padding: '10px', borderRadius: '12px' }}>
-            <BookOpen size={20} color="#fff" />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+          <div style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', padding: '8px', borderRadius: '10px', flexShrink: 0 }}>
+            <BookOpen size={18} color="#fff" />
           </div>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Grammar, Punctuation & Phonetic Sounds Studio</h2>
-            <p style={{ fontSize: '12px', color: '#9ca3af' }}>Analyze sentence structure, punctuation marks, spelling, and listen to authentic sound pronunciation</p>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>Grammar & Phonetics Tutor</h2>
+            <p className="hide-mobile" style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>Grammar, punctuation & IPA pronunciation for 51 languages</p>
           </div>
         </div>
 
         {/* Target Language Selector */}
-        <select 
+        <select
           value={targetLang}
           onChange={(e) => setTargetLang(e.target.value)}
           style={{
             background: 'rgba(30, 41, 59, 0.9)',
             border: '1px solid rgba(255, 255, 255, 0.15)',
             borderRadius: '10px',
-            padding: '8px 14px',
+            padding: '8px 12px',
             color: '#fff',
             fontSize: '13px',
             outline: 'none',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            flexShrink: 0,
+            maxWidth: '160px',
           }}
         >
           {Object.entries(languages || {}).map(([code, meta]) => (
             <option key={code} value={code}>
-              {meta.flag} {meta.name} ({meta.native})
+              {meta.flag} {meta.name}
             </option>
           ))}
         </select>
