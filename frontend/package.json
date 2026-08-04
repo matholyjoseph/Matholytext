@@ -11,11 +11,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "vite build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "dev": "vite",
-    "preview": "vite preview"
+    "eject": "react-scripts eject"
   },
   "browserslist": {
     "production": [
@@ -28,9 +26,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^6.0.5",
-    "vite": "^8.2.0"
   }
 }
