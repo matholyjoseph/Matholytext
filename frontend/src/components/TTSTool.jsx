@@ -93,7 +93,7 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
     }
   };
 
-  const handlePreviewVoice = async (voiceId, e) => {
+  const handlePreviewVoice = (voiceId, e) => {
     e.stopPropagation();
     if (previewingVoiceId === voiceId) {
       setPreviewingVoiceId(null);
@@ -101,11 +101,15 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
     }
     setPreviewingVoiceId(voiceId);
     try {
-      const audioUrl = await previewVoice(voiceId);
+      const voice = voices.find(v => v.voice_id === voiceId);
+      const lang = voice ? voice.language : (voiceId.includes('-') ? voiceId.split('-')[0] : 'en');
+      const text = voice ? voice.sample_text : "Welcome to the Text-to-Speech studio. This is a short preview of my voice.";
+      
+      const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=gtx&q=${encodeURIComponent(text)}`;
       const audio = new Audio(audioUrl);
       audio.onended = () => setPreviewingVoiceId(null);
       audio.onerror = () => setPreviewingVoiceId(null);
-      await audio.play();
+      audio.play();
     } catch (err) {
       console.warn("Voice preview error:", err);
       setPreviewingVoiceId(null);
@@ -476,16 +480,17 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
         <span>{isSynthesizing ? 'Synthesizing Neural Speech...' : `Generate ${activeVoiceMeta.name || 'Speech'}`}</span>
       </button>
 
+      {/* Hidden persistent audio element for mobile browser compatibility */}
+      <audio 
+        ref={audioRef}
+        src={generatedAudioUrl || ''}
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={() => setIsPlaying(false)}
+      />
+
       {/* Audio Player & Download Controls */}
       {generatedAudioUrl && (
         <div style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(15, 23, 42, 0.95))', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <audio 
-            ref={audioRef}
-            src={generatedAudioUrl}
-            onTimeUpdate={handleTimeUpdate}
-            onEnded={() => setIsPlaying(false)}
-          />
-
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Music size={20} color="#10b981" />
@@ -509,7 +514,7 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
                 <RotateCcw size={16} />
               </button>
 
-              <a href={generatedAudioUrl} download={generatedFilename} style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff', textDecoration: 'none', padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <a href={generatedAudioUrl} target="_blank" rel="noopener noreferrer" download={generatedFilename} style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff', textDecoration: 'none', padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Download size={16} />
                 <span>Download {outputFormat.toUpperCase()}</span>
               </a>
