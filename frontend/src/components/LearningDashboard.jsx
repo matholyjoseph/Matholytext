@@ -59,7 +59,7 @@ const LearningDashboard = ({ username, selectedLang, languages }) => {
   const langMeta = languages[selectedLang] || { name: selectedLang, flag: '🌐' };
 
   return (
-    <div className="learning-dashboard-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '320px', flexShrink: 0 }}>
+    <div className="learning-dashboard-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexShrink: 0 }}>
       {/* Stats Header */}
       <div className="glass-panel" style={{ padding: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>

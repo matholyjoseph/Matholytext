@@ -191,7 +191,7 @@ const GrammarTool = ({ languages, selectedLang, username }) => {
               gap: '10px'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: '#34d399', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <CheckCircle size={15} /> Corrected Sentence (Grammar & Punctuation Fixed):
               </span>

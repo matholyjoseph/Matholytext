@@ -97,23 +97,23 @@ const ChatBox = ({ messages, onSendMessage, selectedLang, username, languages })
   };
 
   return (
-    <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minWidth: 0 }}>
+    <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '500px', overflow: 'hidden', minWidth: 0 }}>
       {/* Header */}
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(17, 24, 39, 0.5)' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(17, 24, 39, 0.5)', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981', flexShrink: 0 }} />
           <div>
-            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#fff' }}>Multilingual Conversation</h3>
-            <p style={{ fontSize: '11px', color: '#9ca3af' }}>Active Language: <strong style={{ color: '#c084fc' }}>{languages[selectedLang]?.name || selectedLang}</strong></p>
+            <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>Multilingual Conversation</h3>
+            <p style={{ fontSize: '11px', color: '#9ca3af' }}>Active: <strong style={{ color: '#c084fc' }}>{languages[selectedLang]?.name || selectedLang}</strong></p>
           </div>
         </div>
-        <span className="badge-tag">51 Languages Ready</span>
+        <span className="badge-tag">51 Languages</span>
       </div>
 
       {/* Message History */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      <div className="chat-messages-container" style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '200px' }}>
         {messages.length === 0 ? (
-          <div style={{ margin: 'auto', textAlign: 'center', color: '#9ca3af', maxWidth: '420px', padding: '20px' }}>
+          <div style={{ margin: 'auto', textAlign: 'center', color: '#9ca3af', maxWidth: '380px', padding: '20px' }}>
             <div style={{ background: 'rgba(139, 92, 246, 0.15)', width: '56px', height: '56px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Sparkles size={28} color="#c084fc" />
             </div>
@@ -129,11 +129,11 @@ const ChatBox = ({ messages, onSendMessage, selectedLang, username, languages })
             const isRTL = languages[msg.detected_language]?.dir === 'rtl';
 
             return (
-              <div 
+              <div
                 key={idx}
                 style={{
                   alignSelf: isUser ? 'flex-end' : 'flex-start',
-                  maxWidth: '80%',
+                  maxWidth: '85%',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: isUser ? 'flex-end' : 'flex-start'
@@ -144,12 +144,12 @@ const ChatBox = ({ messages, onSendMessage, selectedLang, username, languages })
                   {msg.detected_language && <span style={{ color: '#c084fc' }}>({msg.detected_language.toUpperCase()})</span>}
                 </div>
 
-                <div 
+                <div
                   style={{
-                    padding: '14px 18px',
+                    padding: '12px 16px',
                     borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    background: isUser 
-                      ? 'linear-gradient(135deg, #2563eb, #4f46e5)' 
+                    background: isUser
+                      ? 'linear-gradient(135deg, #2563eb, #4f46e5)'
                       : 'rgba(30, 41, 59, 0.9)',
                     border: isUser ? 'none' : '1px solid rgba(255, 255, 255, 0.12)',
                     color: '#fff',
@@ -157,7 +157,8 @@ const ChatBox = ({ messages, onSendMessage, selectedLang, username, languages })
                     lineHeight: '1.6',
                     direction: isRTL ? 'rtl' : 'ltr',
                     textAlign: isRTL ? 'right' : 'left',
-                    userSelect: 'text'
+                    userSelect: 'text',
+                    wordBreak: 'break-word',
                   }}
                 >
                   {msg.content}
@@ -171,19 +172,19 @@ const ChatBox = ({ messages, onSendMessage, selectedLang, username, languages })
 
                 {/* Message Actions */}
                 {!isUser && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                    <button 
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <button
                       onClick={() => handlePlayAudio(msgId, msg.content, msg.detected_language)}
                       className="icon-action-btn"
                       style={{ color: playingMsgId === msgId ? '#ec4899' : '#9ca3af' }}
                       title="Listen to pronunciation"
                     >
                       {playingMsgId === msgId ? <VolumeX size={14} color="#ec4899" /> : <Volume2 size={14} />}
-                      <span style={{ color: playingMsgId === msgId ? '#ec4899' : '#9ca3af', fontWeight: playingMsgId === msgId ? 600 : 400 }}>
+                      <span style={{ color: playingMsgId === msgId ? '#ec4899' : '#9ca3af' }}>
                         {playingMsgId === msgId ? 'Stop' : 'Audio'}
                       </span>
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleToggleTranslate(msgId, msg.content)}
                       className="icon-action-btn"
                       title="Translate text"
@@ -191,7 +192,7 @@ const ChatBox = ({ messages, onSendMessage, selectedLang, username, languages })
                       <Languages size={14} />
                       <span>{translatedMap[msgId] ? 'Hide' : 'Translate'}</span>
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleFeedback(msgId, 1)}
                       className="icon-action-btn"
                       style={{ color: feedbackGiven[msgId] === 1 ? '#10b981' : '#9ca3af' }}
@@ -199,7 +200,7 @@ const ChatBox = ({ messages, onSendMessage, selectedLang, username, languages })
                     >
                       <ThumbsUp size={14} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleFeedback(msgId, -1)}
                       className="icon-action-btn"
                       style={{ color: feedbackGiven[msgId] === -1 ? '#ef4444' : '#9ca3af' }}
@@ -217,29 +218,30 @@ const ChatBox = ({ messages, onSendMessage, selectedLang, username, languages })
       </div>
 
       {/* Input Bar */}
-      <div style={{ padding: '14px 18px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(17, 24, 39, 0.6)' }}>
+      <div style={{ padding: '12px 14px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(17, 24, 39, 0.6)', flexWrap: 'nowrap' }}>
         <VoiceRecorder onTranscribe={(text) => onSendMessage(text)} selectedLang={selectedLang} />
-        <input 
+        <input
           type="text"
-          placeholder={`Type message in ${languages[selectedLang]?.name || 'any language'}...`}
+          placeholder={`Type in ${languages[selectedLang]?.name || 'any language'}...`}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           style={{
             flex: 1,
+            minWidth: 0,
             background: 'rgba(255, 255, 255, 0.07)',
             border: '1px solid rgba(255, 255, 255, 0.15)',
             borderRadius: '12px',
-            padding: '12px 16px',
+            padding: '11px 14px',
             color: '#fff',
             fontSize: '14px',
             outline: 'none',
-            transition: 'border-color 0.2s'
+            transition: 'border-color 0.2s',
           }}
         />
-        <button onClick={handleSend} className="glow-btn" style={{ padding: '12px 20px', borderRadius: '12px' }}>
+        <button onClick={handleSend} className="glow-btn" style={{ padding: '11px 16px', borderRadius: '12px', flexShrink: 0 }}>
           <Send size={16} />
-          <span>Send</span>
+          <span className="hide-mobile">Send</span>
         </button>
       </div>
     </div>
