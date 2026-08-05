@@ -26,6 +26,18 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [geminiKey, setGeminiKey] = useState(getGeminiApiKey());
 
+  // Prevent background scrolling when mobile menu drawer is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
+
   useEffect(() => {
     initApp();
   }, []);
@@ -244,24 +256,38 @@ function App() {
 
       {/* Collapsible Mobile Menu Drawer - Outside of header to prevent flex clipping in mobile Safari */}
       {isMobileMenuOpen && (
-        <div
-          className="mobile-menu-drawer glass-panel"
-          style={{
-            position: 'absolute',
-            top: '72px',
-            left: '8px',
-            right: '8px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '6px',
-            padding: '12px',
-            background: 'rgba(9, 13, 22, 0.98)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)',
-            borderRadius: '12px',
-            zIndex: 200,
-          }}
-        >
+        <>
+          <div 
+            onClick={() => setIsMobileMenuOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 199
+            }}
+          />
+          <div
+            className="mobile-menu-drawer glass-panel"
+            style={{
+              position: 'absolute',
+              top: '72px',
+              left: '8px',
+              right: '8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              padding: '12px',
+              background: 'rgba(9, 13, 22, 0.98)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)',
+              borderRadius: '12px',
+              zIndex: 200,
+            }}
+          >
           {/* Current active tab indicator */}
           <div
             style={{
@@ -346,6 +372,7 @@ function App() {
             );
           })}
         </div>
+        </>
       )}
 
       {/* Main Workspace Area */}

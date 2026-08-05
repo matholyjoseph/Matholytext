@@ -198,7 +198,7 @@ const DictionaryTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang 
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
               {Object.entries(activeLangs).map(([code, meta]) => {
-                const transText = searchResult.translations?.[code] || `${searchResult.word} (${meta.native || meta.name})`;
+                const transText = searchResult.translations?.[code];
                 const isCopied = copiedCode === code;
 
                 return (
@@ -220,17 +220,27 @@ const DictionaryTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang 
                       <span style={{ fontSize: '20px' }}>{meta.flag}</span>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: '11px', color: '#9ca3af' }}>{meta.name} ({meta.native}):</div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#34d399', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', direction: meta.dir === 'rtl' ? 'rtl' : 'ltr', textAlign: meta.dir === 'rtl' ? 'right' : 'left' }}>
-                          {transText}
+                        <div style={{ 
+                          fontSize: '14px', 
+                          fontWeight: 700, 
+                          color: transText ? '#34d399' : '#f87171', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis', 
+                          whiteSpace: 'nowrap', 
+                          direction: meta.dir === 'rtl' ? 'rtl' : 'ltr', 
+                          textAlign: meta.dir === 'rtl' ? 'right' : 'left' 
+                        }}>
+                          {transText || 'Unavailable'}
                         </div>
                       </div>
                     </div>
 
                     <button 
-                      onClick={() => handleCopyTranslation(code, transText)}
+                      onClick={() => transText && handleCopyTranslation(code, transText)}
+                      disabled={!transText}
                       className="icon-action-btn"
-                      title="Copy translation"
-                      style={{ padding: '6px' }}
+                      title={transText ? "Copy translation" : "Translation unavailable"}
+                      style={{ padding: '6px', opacity: transText ? 1 : 0.4 }}
                     >
                       {isCopied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
                     </button>

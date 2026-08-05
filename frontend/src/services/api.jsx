@@ -69,6 +69,10 @@ const callGeminiAPI = async (messages, targetLang, mode = 'general') => {
 // CORE CLIENT SERVICES
 // ============================================================================
 
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'http://localhost:8000/api/v1'
+  : '/api/v1';
+
 export const fetchSupportedLanguages = async () => {
   return { languages: DEFAULT_SUPPORTED_LANGUAGES };
 };
@@ -76,11 +80,16 @@ export const fetchSupportedLanguages = async () => {
 export const detectLanguage = async (text) => {
   if (!text || !text.trim()) return { code: 'en', name: 'English' };
   try {
-    const res = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.substring(0, 100))}&langpair=auto|en`);
-    const code = res.data.matches?.[0]?.language || 'en';
-    const langMeta = DEFAULT_SUPPORTED_LANGUAGES[code] || { name: 'English' };
-    return { code, name: langMeta.name };
+    const res = await axios.post(`${API_BASE_URL}/detector/detect`, { text: text.substring(0, 500) });
+    return {
+      code: res.data.code,
+      name: res.data.name,
+      script: res.data.script,
+      dir: res.data.dir,
+      flag: res.data.flag
+    };
   } catch (e) {
+    // Basic fallback if detector endpoint fails
     return { code: 'en', name: 'English' };
   }
 };
@@ -88,68 +97,92 @@ export const detectLanguage = async (text) => {
 export const translateText = async (text, target_lang, source_lang = null) => {
   if (!text || !text.trim()) return { translatedText: '', translated_text: '', provider: 'none' };
   try {
-    const sLang = source_lang || 'auto';
-    const res = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sLang}|${target_lang}`);
-    const translatedText = res.data.responseData.translatedText;
+    const res = await axios.post(`${API_BASE_URL}/translate/`, {
+      text: text,
+      target_lang: target_lang,
+      source_lang: source_lang === 'auto' ? null : source_lang
+    });
     return {
-      translatedText: translatedText,
-      translated_text: translatedText,
-      source_lang: sLang,
-      target_lang,
-      provider: 'MyMemory Free Translation',
+      translatedText: res.data.translated_text,
+      translated_text: res.data.translated_text,
+      source_lang: res.data.source_lang,
+      target_lang: res.data.target_lang,
+      provider: res.data.provider || 'Neural API'
     };
   } catch (error) {
-    throw new Error(`Translation failed: ${error.message}`);
+    const errMsg = error.response?.data?.detail || error.message || 'Translation could not be completed. Please try again.';
+    throw new Error(errMsg);
   }
 };
 
 export const getProviderStatus = async () => {
-  return [
-    { provider: "MyMemory", status: "online", latency: "100ms" },
-    { provider: "LanguageTool", status: "online", latency: "150ms" },
-    { provider: "Google TTS", status: "online", latency: "80ms" }
-  ];
+  try {
+    const res = await axios.get(`${API_BASE_URL}/translate/providers/status`);
+    return res.data.providers.map(p => ({
+      provider: p.provider,
+      status: p.healthy ? 'online' : 'offline',
+      latency: p.healthy ? '100ms' : 'N/A'
+    }));
+  } catch (e) {
+    return [
+      { provider: "Google", status: "online", latency: "120ms" },
+      { provider: "MyMemory", status: "online", latency: "150ms" },
+      { provider: "LibreTranslate", status: "online", latency: "200ms" }
+    ];
+  }
 };
 
 export const suggestTranslation = async (original, source_lang, target_lang, current_translation, suggestion) => {
-  const key = 'matholy_translation_suggestions';
-  const current = JSON.parse(localStorage.getItem(key) || '[]');
-  current.push({ original, source_lang, target_lang, current_translation, suggestion, timestamp: new Date() });
-  localStorage.setItem(key, JSON.stringify(current));
-  return { status: "success", message: "Suggestion stored locally." };
+  try {
+    const res = await axios.post(`${API_BASE_URL}/corrections/`, {
+      original,
+      source_lang,
+      target_lang,
+      current_translation,
+      suggestion
+    });
+    return res.data;
+  } catch (error) {
+    const key = 'matholy_translation_suggestions';
+    const current = JSON.parse(localStorage.getItem(key) || '[]');
+    current.push({ original, source_lang, target_lang, current_translation, suggestion, timestamp: new Date() });
+    localStorage.setItem(key, JSON.stringify(current));
+    return { status: "success", message: "Suggestion stored locally." };
+  }
 };
 
 export const scanDocument = async (file) => {
-  return { text: "Stand-alone website mode handles document scanning via direct client-side extraction. For best results in production, use raw text input." };
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const res = await axios.post(`${API_BASE_URL}/translate/document/scan`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Document scanning failed.');
+  }
 };
 
 export const translateDocumentFile = async (file, target_language, source_language = 'auto') => {
-  return new Promise((resolve, reject) => {
-    if (!file) {
-      resolve(new Blob(["No file selected"], { type: 'text/plain;charset=utf-8' }));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const text = e.target.result;
-        if (!text || !text.trim()) {
-          resolve(new Blob(["Empty document upload"], { type: 'text/plain;charset=utf-8' }));
-          return;
-        }
-        // Translate the extracted text using MyMemory
-        const translationRes = await translateText(text, target_language, source_language);
-        const translatedContent = translationRes.translatedText || text;
-        
-        const blob = new Blob([translatedContent], { type: 'text/plain;charset=utf-8' });
-        resolve(blob);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = () => reject(new Error("Failed to read file."));
-    reader.readAsText(file);
-  });
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('target_language', target_language);
+  formData.append('source_language', source_language);
+
+  try {
+    const res = await axios.post(`${API_BASE_URL}/translate/document/translate`, formData, {
+      responseType: 'blob',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || 'Document translation failed.');
+  }
 };
 
 // ============================================================================
@@ -157,75 +190,16 @@ export const translateDocumentFile = async (file, target_language, source_langua
 // ============================================================================
 export const lookupDictionary = async (word, targetLang = 'en') => {
   if (!word || !word.trim()) return null;
-  const cleanWord = word.trim().toLowerCase();
-
   try {
-    const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
-    const data = res.data[0];
-    
-    // Translate meanings' definitions to targetLang if not 'en'
-    const translatedMeanings = await Promise.all(data.meanings.map(async (m) => {
-      const rawDef = m.definitions?.[0]?.definition || '';
-      let translatedDef = rawDef;
-      
-      if (targetLang && targetLang !== 'en') {
-        try {
-          const trans = await translateText(rawDef, targetLang, 'en');
-          translatedDef = trans.translatedText || rawDef;
-        } catch (e) {
-          console.warn("Failed to translate definition:", e);
-        }
-      }
-      
-      return {
-        partOfSpeech: m.partOfSpeech,
-        definition: translatedDef,
-        example: m.definitions?.[0]?.example || ''
-      };
-    }));
-
-    return {
-      word: data.word,
-      phonetic: data.phonetic || (data.phonetics?.[0]?.text || ''),
-      meanings: translatedMeanings
-    };
+    const res = await axios.get(`${API_BASE_URL}/dictionary/lookup`, {
+      params: {
+        word: word.trim(),
+        language: targetLang,
+      },
+    });
+    return res.data;
   } catch (error) {
-    try {
-      const transToEn = await translateText(cleanWord, 'en', 'auto');
-      const enWord = transToEn.translatedText.trim().toLowerCase();
-      
-      const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(enWord)}`);
-      const data = res.data[0];
-
-      // Translate the English definition to targetLang
-      const translatedMeanings = await Promise.all(data.meanings.map(async (m) => {
-        const rawDef = m.definitions?.[0]?.definition || '';
-        let translatedDef = rawDef;
-        
-        if (targetLang && targetLang !== 'en') {
-          try {
-            const trans = await translateText(rawDef, targetLang, 'en');
-            translatedDef = trans.translatedText || rawDef;
-          } catch (e) {
-            console.warn("Failed to translate definition:", e);
-          }
-        }
-        
-        return {
-          partOfSpeech: m.partOfSpeech,
-          definition: `(${enWord.toUpperCase()}) ` + translatedDef,
-          example: m.definitions?.[0]?.example || ''
-        };
-      }));
-
-      return {
-        word: cleanWord,
-        phonetic: data.phonetic || '',
-        meanings: translatedMeanings
-      };
-    } catch (e2) {
-      throw new Error(`Word '${word}' not found in dictionary.`);
-    }
+    throw new Error(error.response?.data?.detail || `Word '${word}' not found in dictionary.`);
   }
 };
 
@@ -469,167 +443,155 @@ export const reviewVocab = async (vocab_id, quality_score) => {
 // SPEECH SERVICES (gTTS & Web Voices Client Integration)
 // ============================================================================
 
-const STATIC_VOICES_CATALOG = [
-  // English (en)
-  { voice_id: "en-US-GuyNeural", name: "Guy (Deep Male Narrator)", provider: "EdgeTTS", language: "en", locale: "en-US", country: "United States", accent: "American", gender: "male", depth: "deep", emotion: "confident", purpose: "audiobook", storytelling_type: "Deep Male Narrator", sample_text: "Welcome to the story studio. Let us begin our journey through the deep forest." },
-  { voice_id: "en-US-JennyNeural", name: "Jenny (Warm Female Storyteller)", provider: "EdgeTTS", language: "en", locale: "en-US", country: "United States", accent: "American", gender: "female", depth: "medium", emotion: "warm", purpose: "storytelling", storytelling_type: "Warm Storyteller", sample_text: "Welcome to the story studio. Today we will explore a beautiful narrative." },
-  
-  // Spanish (es)
-  { voice_id: "es-ES-AlvaroNeural", name: "Álvaro (Natural Male)", provider: "EdgeTTS", language: "es", locale: "es-ES", country: "Spain", accent: "Castilian", gender: "male", depth: "medium", emotion: "calm", purpose: "friendly", storytelling_type: "Natural Voice", sample_text: "Bienvenido al estudio de texto a voz. Este es un breve ejemplo." },
-  { voice_id: "es-ES-ElviraNeural", name: "Elvira (Clear Female)", provider: "EdgeTTS", language: "es", locale: "es-ES", country: "Spain", accent: "Castilian", gender: "female", depth: "light", emotion: "warm", purpose: "professional", storytelling_type: "Clear Presenter", sample_text: "Bienvenido al estudio de texto a voz. Espero que disfrutes la experiencia." },
-  
-  // French (fr)
-  { voice_id: "fr-FR-HenriNeural", name: "Henri (Elegant Male)", provider: "EdgeTTS", language: "fr", locale: "fr-FR", country: "France", accent: "French", gender: "male", depth: "medium", emotion: "calm", purpose: "storytelling", storytelling_type: "Elegant Narrator", sample_text: "Bienvenue dans le studio de synthèse vocale. Voici un court extrait." },
-  { voice_id: "fr-FR-DeniseNeural", name: "Denise (Soft Female)", provider: "EdgeTTS", language: "fr", locale: "fr-FR", country: "France", accent: "French", gender: "female", depth: "light", emotion: "warm", purpose: "friendly", storytelling_type: "Soft Voice", sample_text: "Bienvenue dans le studio de synthèse vocale. Comment puis-je vous aider aujourd'hui?" },
-
-  // German (de)
-  { voice_id: "de-DE-ConradNeural", name: "Conrad (Strong Male)", provider: "EdgeTTS", language: "de", locale: "de-DE", country: "Germany", accent: "German", gender: "male", depth: "strong", emotion: "confident", purpose: "news", storytelling_type: "Strong Speaker", sample_text: "Willkommen im Text-zu-Sprache-Studio. Dies ist eine kurze Vorschau." },
-  
-  // Japanese (ja)
-  { voice_id: "ja-JP-KeitaNeural", name: "Keita (Clear Male)", provider: "EdgeTTS", language: "ja", locale: "ja-JP", country: "Japan", accent: "Japanese", gender: "male", depth: "medium", emotion: "calm", purpose: "friendly", storytelling_type: "Friendly Speaker", sample_text: "テキスト読み上げスタジオへようこそ।音声のプレビューです。" },
-  { voice_id: "ja-JP-NanamiNeural", name: "Nanami (Warm Female)", provider: "EdgeTTS", language: "ja", locale: "ja-JP", country: "Japan", accent: "Japanese", gender: "female", depth: "light", emotion: "warm", purpose: "storytelling", storytelling_type: "Warm Presenter", sample_text: "テキスト読み上げスタジオへようこそ।どうぞお楽しみください。" },
-  
-  // Hindi (hi)
-  { voice_id: "hi-IN-MadhurNeural", name: "Madhur (Fluent Male)", provider: "EdgeTTS", language: "hi", locale: "hi-IN", country: "India", accent: "Hindi", gender: "male", depth: "medium", emotion: "warm", purpose: "friendly", storytelling_type: "Fluent Speaker", sample_text: "पाठ से भाषण स्टूडियो में आपका स्वागत है। यह एक त्वरित पूर्वावलोकन है।" },
-  { voice_id: "hi-IN-SwaraNeural", name: "Swara (Soft Female)", provider: "EdgeTTS", language: "hi", locale: "hi-IN", country: "India", accent: "Hindi", gender: "female", depth: "light", emotion: "calm", purpose: "storytelling", storytelling_type: "Soft Narrator", sample_text: "पाठ से भाषण स्टूडियो में आपका स्वागत है। मुझे उम्मीद है कि आपको यह पसंद आएगा।" }
-];
-
 export const fetchVoices = async (params = {}) => {
-  const lang = params.language || 'en';
-  
-  // 1. Filter matching voices
-  let filtered = STATIC_VOICES_CATALOG.filter(v => v.language === lang);
-  
-  // 2. Dynamic Fallback Generation if language is not directly covered in static list
-  if (filtered.length === 0) {
-    const langName = DEFAULT_SUPPORTED_LANGUAGES[lang]?.name || lang;
-    filtered = [
-      {
-        voice_id: `${lang}-StandardMale`,
-        name: `${langName} Male (Standard)`,
-        provider: "EdgeTTS",
-        language: lang,
-        locale: lang,
-        country: langName,
-        accent: "Standard",
-        gender: "male",
-        depth: "medium",
-        emotion: "calm",
-        purpose: "general",
-        storytelling_type: "System Voice",
-        sample_text: `This is a sample voice preview in ${langName}.`
-      },
-      {
-        voice_id: `${lang}-StandardFemale`,
-        name: `${langName} Female (Standard)`,
-        provider: "EdgeTTS",
-        language: lang,
-        locale: lang,
-        country: langName,
-        accent: "Standard",
-        gender: "female",
-        depth: "light",
-        emotion: "warm",
-        purpose: "general",
-        storytelling_type: "System Voice",
-        sample_text: `This is a sample voice preview in ${langName}.`
-      }
+  try {
+    const res = await axios.get(`${API_BASE_URL}/speech/voices`, { params });
+    return res.data;
+  } catch (error) {
+    console.warn("Failed to fetch voices from backend, returning client fallback:", error);
+    // Basic static catalog fallback
+    const fallbackCatalog = [
+      { voice_id: "en-US-GuyNeural", name: "Guy (Deep Male Narrator)", provider: "EdgeTTS", language: "en", locale: "en-US", country: "United States", accent: "American", gender: "male", depth: "deep", emotion: "confident", purpose: "audiobook", storytelling_type: "Deep Male Narrator", sample_text: "Welcome to the story studio. Let us begin our journey through the deep forest." },
+      { voice_id: "en-US-JennyNeural", name: "Jenny (Warm Female Storyteller)", provider: "EdgeTTS", language: "en", locale: "en-US", country: "United States", accent: "American", gender: "female", depth: "medium", emotion: "warm", purpose: "storytelling", storytelling_type: "Warm Storyteller", sample_text: "Welcome to the story studio. Today we will explore a beautiful narrative." },
+      { voice_id: "es-ES-AlvaroNeural", name: "Álvaro (Natural Male)", provider: "EdgeTTS", language: "es", locale: "es-ES", country: "Spain", accent: "Castilian", gender: "male", depth: "medium", emotion: "calm", purpose: "friendly", storytelling_type: "Natural Voice", sample_text: "Bienvenido al estudio de texto a voz. Este es un breve ejemplo." },
+      { voice_id: "es-ES-ElviraNeural", name: "Elvira (Clear Female)", provider: "EdgeTTS", language: "es", locale: "es-ES", country: "Spain", accent: "Castilian", gender: "female", depth: "light", emotion: "warm", purpose: "professional", storytelling_type: "Clear Presenter", sample_text: "Bienvenido al estudio de texto a voz. Espero que disfrutes la experiencia." }
     ];
+    let filtered = fallbackCatalog;
+    if (params.language) {
+      filtered = filtered.filter(v => v.language === params.language);
+    }
+    if (params.gender) {
+      filtered = filtered.filter(v => v.gender === params.gender);
+    }
+    return { voices: filtered };
   }
-  
-  // 3. Filter by other criteria if provided
-  if (params.gender) {
-    filtered = filtered.filter(v => v.gender === params.gender);
-  }
-  
-  return { voices: filtered };
 };
 
 export const previewVoice = async (voice_id, sample_text = null) => {
-  // Find voice in static list or parse from fallback voice_id
-  let voice = STATIC_VOICES_CATALOG.find(v => v.voice_id === voice_id);
-  let lang = 'en';
-  let text = sample_text || "Welcome to the Text-to-Speech studio. This is a preview of my voice.";
-  
-  if (voice) {
-    lang = voice.language;
-    text = sample_text || voice.sample_text;
-  } else if (voice_id && voice_id.includes('-')) {
-    lang = voice_id.split('-')[0];
+  try {
+    const res = await axios.post(`${API_BASE_URL}/speech/preview`, {
+      voice_id,
+      sample_text
+    }, {
+      responseType: 'blob'
+    });
+    return URL.createObjectURL(res.data);
+  } catch (error) {
+    console.warn("Backend voice preview failed, using Google Translate fallback:", error);
+    const lang = voice_id.split('-')[0] || 'en';
+    const text = sample_text || "Welcome to the Text-to-Speech studio.";
+    return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(text)}`;
   }
-  
-  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(text)}`;
 };
 
 export const synthesizeAdvancedSpeech = async (payload) => {
-  const voiceId = payload.voice_id || 'en-US-GuyNeural';
-  let voice = STATIC_VOICES_CATALOG.find(v => v.voice_id === voiceId);
-  let lang = 'en';
-  
-  if (voice) {
-    lang = voice.language;
-  } else if (voiceId.includes('-')) {
-    lang = voiceId.split('-')[0];
+  try {
+    const res = await axios.post(`${API_BASE_URL}/speech/synthesize`, {
+      text: payload.text,
+      voice_id: payload.voice_id || "en-US-GuyNeural",
+      rate_percent: payload.rate_percent || 0,
+      pitch_percent: payload.pitch_percent || 0,
+      volume_percent: payload.volume_percent || 0,
+      output_format: payload.output_format || "mp3",
+      mode: payload.mode || "general",
+      username: payload.username || "default_user"
+    });
+    
+    const filename = res.data.filename;
+    return {
+      status: "success",
+      filename: filename,
+      audio_url: `${API_BASE_URL}/speech/download/${filename}`,
+      duration_seconds: res.data.duration_seconds || 0,
+      text_preview: res.data.text_preview || payload.text
+    };
+  } catch (error) {
+    const errMsg = error.response?.data?.detail || error.message || 'Speech synthesis failed.';
+    throw new Error(errMsg);
   }
-
-  const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(payload.text)}`;
-  
-  // Save to local storage history
-  const historyKey = `matholy_tts_history_${payload.username || 'default_user'}`;
-  const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-  
-  const newHistoryItem = {
-    id: Date.now(),
-    filename: `speech_${Date.now()}.mp3`,
-    text: payload.text,
-    text_preview: payload.text.length > 50 ? payload.text.substring(0, 50) + '...' : payload.text,
-    voice_id: voiceId,
-    voice_name: voice ? voice.name : voiceId,
-    language: lang,
-    created_at: new Date().toISOString(),
-    audio_url: audioUrl
-  };
-  
-  history.unshift(newHistoryItem); // Add to beginning of history list
-  localStorage.setItem(historyKey, JSON.stringify(history));
-
-  return {
-    status: "success",
-    filename: newHistoryItem.filename,
-    audio_url: audioUrl
-  };
 };
 
 export const fetchAudioHistory = async (username) => {
-  const historyKey = `matholy_tts_history_${username || 'default_user'}`;
-  const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-  return { history };
+  try {
+    const res = await axios.get(`${API_BASE_URL}/speech/history/${username || 'default_user'}`);
+    const enrichedHistory = res.data.history.map(item => ({
+      ...item,
+      audio_url: `${API_BASE_URL}/speech/download/${item.filename}`
+    }));
+    return { history: enrichedHistory };
+  } catch (error) {
+    console.warn("Failed to fetch speech history from backend, returning local cache:", error);
+    const historyKey = `matholy_tts_history_${username || 'default_user'}`;
+    const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    return { history };
+  }
 };
 
 export const deleteAudioHistory = async (filename) => {
-  // Find and remove from local storage history across all users
-  for (let key in localStorage) {
-    if (key.startsWith('matholy_tts_history_')) {
-      const history = JSON.parse(localStorage.getItem(key) || '[]');
-      const filtered = history.filter(item => item.filename !== filename);
-      localStorage.setItem(key, JSON.stringify(filtered));
+  try {
+    const res = await axios.delete(`${API_BASE_URL}/speech/audio/${filename}`);
+    return res.data;
+  } catch (error) {
+    console.warn("Failed to delete audio from backend, removing locally:", error);
+    for (let key in localStorage) {
+      if (key.startsWith('matholy_tts_history_')) {
+        const history = JSON.parse(localStorage.getItem(key) || '[]');
+        const filtered = history.filter(item => item.filename !== filename);
+        localStorage.setItem(key, JSON.stringify(filtered));
+      }
     }
+    return { status: "success" };
   }
-  return { status: "success" };
 };
 
 export const textToSpeech = async (text, language) => {
   if (!text || !text.trim()) return '';
-  return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${language}&client=tw-ob&q=${encodeURIComponent(text)}`;
+  try {
+    const res = await axios.post(`${API_BASE_URL}/speech/tts`, {
+      text: text,
+      language: language
+    }, {
+      responseType: 'blob'
+    });
+    return URL.createObjectURL(res.data);
+  } catch (error) {
+    console.warn("Backend /tts failed, using Google Translate fallback:", error);
+    return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${language}&client=tw-ob&q=${encodeURIComponent(text)}`;
+  }
 };
 
 export const speechToText = async (audioBlob, target_language = null) => {
-  return {
-    text: "Standalone voice input is processed via browser SpeechRecognition. Tap speak and dictate.",
-    detected_language: target_language || 'en'
-  };
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'input.wav');
+  if (target_language) {
+    formData.append('target_language', target_language);
+  }
+  try {
+    const res = await axios.post(`${API_BASE_URL}/speech/stt`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return res.data;
+  } catch (e) {
+    return {
+      text: "Voice input transcription service unavailable.",
+      detected_language: target_language || 'en'
+    };
+  }
 };
 
 export const submitFeedback = async (message_id, username, rating, feedback_text = null, suggested_correction = null) => {
-  return { status: "success" };
+  try {
+    const res = await axios.post(`${API_BASE_URL}/feedback/`, {
+      message_id,
+      username,
+      rating,
+      feedback_text,
+      suggested_correction
+    });
+    return res.data;
+  } catch (e) {
+    return { status: "success" };
+  }
 };

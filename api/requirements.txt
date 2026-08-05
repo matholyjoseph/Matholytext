@@ -1,0 +1,16 @@
+fastapi>=0.104.0
+pydantic>=2.4.0
+pydantic-settings>=2.0.0
+mangum>=0.17.0
+sqlalchemy>=2.0.0
+aiosqlite>=0.19.0
+httpx>=0.25.0
+langdetect>=1.0.9
+gTTS>=2.4.0
+python-multipart>=0.0.6
+aiofiles>=23.2.1
+python-docx>=1.1.0
+numpy>=1.24.0
+deep-translator>=1.11.4
+edge-tts>=6.1.9
+lxml>=4.9.3

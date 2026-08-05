@@ -494,30 +494,4 @@ class OfflineFallbackProvider(TranslationProvider):
                     target_lang=target_lang,
                     provider=self.name
                 )
-
-        target_meta = LANGUAGES.get(target_lang, {})
-        lang_name = target_meta.get("native") or target_meta.get("name") or target_lang.upper()
-
-        words = clean.split()
-        translated_words = []
-        for w in words:
-            if w in self.OFFLINE_VOCAB and target_lang in self.OFFLINE_VOCAB[w]:
-                translated_words.append(self.OFFLINE_VOCAB[w][target_lang])
-            else:
-                translated_words.append(w)
-
-        glosstext = " ".join(translated_words)
-        if glosstext.lower() != clean:
-            return TranslationResult(
-                text=glosstext,
-                source_lang=source_lang,
-                target_lang=target_lang,
-                provider=self.name
-            )
-
-        return TranslationResult(
-            text=f"{text} [{lang_name}]",
-            source_lang=source_lang,
-            target_lang=target_lang,
-            provider=self.name
-        )
+        return None

@@ -97,19 +97,32 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
     setDictQuery(q);
     setShowDictionary(true);
     setIsLoadingDict(true);
+    setDictResult(null);
 
     try {
       const res = await lookupDictionary(q, targetLang);
-      setDictResult(res);
+      if (res && res.found) {
+        setDictResult({
+          word: res.word,
+          ipa: res.ipa || 'IPA unavailable',
+          definition: res.definition || 'Definition unavailable',
+          translations: res.translations || {}
+        });
+      } else {
+        setDictResult({
+          word: q,
+          ipa: 'IPA unavailable',
+          definition: 'Word not found. Check spelling or try another word.',
+          translations: {}
+        });
+      }
     } catch (e) {
-      console.warn("Dictionary lookup fallback:", e);
+      console.warn("Dictionary lookup error:", e);
       setDictResult({
         word: q,
-        ipa: `/${q.toLowerCase()}/`,
-        respelling: q.charAt(0).toUpperCase() + q.slice(1),
-        part_of_speech: "vocabulary term",
-        definition: `The word '${q}' in English.`,
-        translations: { es: `${q} en español`, fr: `${q} en français`, de: `${q} auf Deutsch`, hi: `${q} (हिंदी)` }
+        ipa: 'IPA unavailable',
+        definition: 'Word not found. Check spelling or try another word.',
+        translations: {}
       });
     } finally {
       setIsLoadingDict(false);
@@ -280,15 +293,16 @@ const TranslationTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, selectedLang
   const handleTranslateDocument = async () => {
     if (!selectedFile && !docScanResult) return;
     setIsTranslatingDoc(true);
+    setError(null);
 
-    const targetName = activeLangs[targetLang]?.name || targetLang;
+    const baseName = (selectedFile?.name || "document").replace(/\.[^/.]+$/, "");
+    const ext = selectedFile ? selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase() : '.docx';
 
     try {
       const blob = await translateDocumentFile(selectedFile, targetLang, sourceLang);
       setTranslatedDocBlob(blob);
-      const baseName = (selectedFile?.name || "document").replace(/\.[^/.]+$/, "");
-      setDownloadFilename(`${baseName}_translated_${targetLang}.txt`);
-      setDownloadExtension('.txt');
+      setDownloadFilename(`${baseName}_translated_${targetLang}${ext}`);
+      setDownloadExtension(ext);
     } catch (err) {
       console.warn("API DOCX endpoint error:", err);
       setError(err.response?.data?.detail || err.message || 'Document translation failed.');

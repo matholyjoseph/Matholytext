@@ -93,7 +93,7 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
     }
   };
 
-  const handlePreviewVoice = (voiceId, e) => {
+  const handlePreviewVoice = async (voiceId, e) => {
     e.stopPropagation();
     if (previewingVoiceId === voiceId) {
       setPreviewingVoiceId(null);
@@ -102,10 +102,8 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
     setPreviewingVoiceId(voiceId);
     try {
       const voice = voices.find(v => v.voice_id === voiceId);
-      const lang = voice ? voice.language : (voiceId.includes('-') ? voiceId.split('-')[0] : 'en');
-      const text = voice ? voice.sample_text : "Welcome to the Text-to-Speech studio. This is a short preview of my voice.";
-      
-      const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=gtx&q=${encodeURIComponent(text)}`;
+      const text = voice ? voice.sample_text : "Welcome to the Text-to-Speech studio.";
+      const audioUrl = await previewVoice(voiceId, text);
       const audio = new Audio(audioUrl);
       audio.onended = () => setPreviewingVoiceId(null);
       audio.onerror = () => setPreviewingVoiceId(null);
@@ -307,7 +305,9 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <label style={{ fontSize: '11px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>Speaking Rate ({ratePercent > 0 ? `+${ratePercent}%` : `${ratePercent}%`})</label>
+                <label style={{ fontSize: '11px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>
+                  Speaking Rate ({(1.0 + ratePercent / 100).toFixed(1)}x speed)
+                </label>
                 <input 
                   type="range" 
                   min="-40" 
@@ -319,7 +319,9 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>Voice Pitch ({pitchPercent > 0 ? `+${pitchPercent}Hz` : `${pitchPercent}Hz`})</label>
+                <label style={{ fontSize: '11px', color: '#9ca3af', display: 'block', marginBottom: '4px' }}>
+                  Voice Pitch ({pitchPercent === 0 ? 'Natural' : (pitchPercent > 0 ? `+${pitchPercent}% higher` : `${pitchPercent}% lower`)})
+                </label>
                 <input 
                   type="range" 
                   min="-30" 
@@ -453,7 +455,9 @@ const TTSTool = ({ languages = DEFAULT_SUPPORTED_LANGUAGES, initialText = '', in
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px'
+                        gap: '4px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
                       }}
                     >
                       <Volume2 size={14} />

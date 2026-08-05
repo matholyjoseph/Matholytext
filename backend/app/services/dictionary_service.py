@@ -238,12 +238,10 @@ class DictionaryService:
                 return
             try:
                 res = await translation_engine.translate(word, "en", lang_code)
-                if res and res.text:
+                if res and res.text and res.text.strip().lower() != word.strip().lower():
                     translations[lang_code] = res.text
-                else:
-                    translations[lang_code] = f"{word.capitalize()}"
             except Exception:
-                translations[lang_code] = f"{word.capitalize()}"
+                pass
 
         # Run translation tasks in small async batches
         tasks = [_translate_to(code) for code in LANGUAGES.keys()]

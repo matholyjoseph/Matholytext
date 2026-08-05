@@ -200,7 +200,7 @@ class TestTranslationEngine:
         if result:
             assert result.text != "Hello", "Translation should differ from input"
             assert len(result.text) > 0
-            assert result.provider in ["argos", "mymemory", "libretranslate"]
+            assert result.provider in ["google", "argos", "mymemory", "libretranslate"]
 
     @pytest.mark.asyncio
     async def test_english_to_french_translation(self):
