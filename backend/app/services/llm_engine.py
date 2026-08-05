@@ -90,6 +90,29 @@ class MultilingualLLMEngine:
     def generate_response(self, messages: List[Dict[str, str]], target_lang: str = "en", mode: str = "general") -> str:
         """Generates a synchronous response."""
         if not self.is_loaded:
+            gemini_key = os.getenv("GEMINI_API_KEY")
+            if gemini_key:
+                try:
+                    import httpx
+                    system_prompt = self.build_system_prompt(target_lang, mode)
+                    contents = [
+                        {"role": "user", "parts": [{"text": f"System Instruction: {system_prompt}\n\nUnderstood? Let's start the conversation."}]},
+                        {"role": "model", "parts": [{"text": "I am ready."}]}
+                    ]
+                    for msg in messages:
+                        contents.append({
+                            "role": "user" if msg["role"] == "user" else "model",
+                            "parts": [{"text": msg["content"]}]
+                        })
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+                    resp = httpx.post(url, json={"contents": contents}, timeout=15.0)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        text = data['candidates'][0]['content']['parts'][0]['text']
+                        if text:
+                            return text
+                except Exception as e:
+                    logger.error(f"Gemini API backend call failed: {e}")
             return self._fallback_response(messages[-1]["content"], target_lang, mode)
 
         system_prompt = self.build_system_prompt(target_lang, mode)
@@ -113,9 +136,11 @@ class MultilingualLLMEngine:
     async def stream_response(self, messages: List[Dict[str, str]], target_lang: str = "en", mode: str = "general") -> AsyncGenerator[str, None]:
         """Streams responses word-by-word for high responsiveness."""
         if not self.is_loaded:
-            mock_text = self._fallback_response(messages[-1]["content"], target_lang, mode)
-            for word in mock_text.split(" "):
+            import asyncio
+            response_text = self.generate_response(messages, target_lang, mode)
+            for word in response_text.split(" "):
                 yield word + " "
+                await asyncio.sleep(0.03)
             return
 
         system_prompt = self.build_system_prompt(target_lang, mode)

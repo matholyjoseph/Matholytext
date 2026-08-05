@@ -217,88 +217,103 @@ const getVocabList = () => JSON.parse(localStorage.getItem('matholy_vocab') || '
 const saveVocabList = (data) => localStorage.setItem('matholy_vocab', JSON.stringify(data));
 
 export const createConversation = async (username, email, target_language, mode = 'general') => {
-  const convs = getConversations();
-  const newConv = {
-    id: Date.now(),
-    username,
-    email,
-    target_language,
-    mode,
-    title: `${DEFAULT_SUPPORTED_LANGUAGES[target_language]?.flag || '🌐'} ${DEFAULT_SUPPORTED_LANGUAGES[target_language]?.name || target_language} Chat`,
-    created_at: new Date().toISOString()
-  };
-  convs.push(newConv);
-  saveConversations(convs);
-  return { status: "success", conversation_id: newConv.id, target_language, mode };
+  try {
+    const res = await axios.post(`${API_BASE_URL}/chat/conversation`, {
+      username,
+      email,
+      target_language,
+      mode,
+      title: `${DEFAULT_SUPPORTED_LANGUAGES[target_language]?.flag || '🌐'} ${DEFAULT_SUPPORTED_LANGUAGES[target_language]?.name || target_language} Chat`
+    });
+    return res.data;
+  } catch (error) {
+    console.warn("Backend chat failed, falling back to local simulation:", error);
+    const convs = getConversations();
+    const newConv = {
+      id: Date.now(),
+      username,
+      email,
+      target_language,
+      mode,
+      title: `${DEFAULT_SUPPORTED_LANGUAGES[target_language]?.flag || '🌐'} ${DEFAULT_SUPPORTED_LANGUAGES[target_language]?.name || target_language} Chat`,
+      created_at: new Date().toISOString()
+    };
+    convs.push(newConv);
+    saveConversations(convs);
+    return { status: "success", conversation_id: newConv.id, target_language, mode };
+  }
 };
 
 export const listConversations = async (username) => {
-  const convs = getConversations();
-  const userConvs = convs.filter(c => c.username === username);
-  return { conversations: userConvs };
+  try {
+    const res = await axios.get(`${API_BASE_URL}/chat/conversations/${username}`);
+    return res.data;
+  } catch (error) {
+    const convs = getConversations();
+    const userConvs = convs.filter(c => c.username === username);
+    return { conversations: userConvs };
+  }
 };
 
 export const fetchMessages = async (conversation_id) => {
-  const msgs = getMessagesList();
-  const convMsgs = msgs.filter(m => m.conversation_id === Number(conversation_id));
-  return { messages: convMsgs };
+  try {
+    const res = await axios.get(`${API_BASE_URL}/chat/messages/${conversation_id}`);
+    return res.data;
+  } catch (error) {
+    const msgs = getMessagesList();
+    const convMsgs = msgs.filter(m => m.conversation_id === Number(conversation_id));
+    return { messages: convMsgs };
+  }
 };
 
 export const sendMessage = async (conversation_id, content) => {
-  const msgs = getMessagesList();
-  const convs = getConversations();
-  const conv = convs.find(c => c.id === Number(conversation_id));
-  const targetLang = conv ? conv.target_language : 'es';
-  const mode = conv ? conv.mode : 'general';
+  try {
+    const res = await axios.post(`${API_BASE_URL}/chat/message`, {
+      conversation_id: Number(conversation_id),
+      content: content
+    });
+    return res.data;
+  } catch (error) {
+    console.warn("Backend chat message failed, falling back to local simulation:", error);
+    const msgs = getMessagesList();
+    const convs = getConversations();
+    const conv = convs.find(c => c.id === Number(conversation_id));
+    const targetLang = conv ? conv.target_language : 'es';
+    const mode = conv ? conv.mode : 'general';
 
-  const userMsg = {
-    id: Date.now(),
-    conversation_id: Number(conversation_id),
-    sender: 'user',
-    content,
-    detected_language: 'auto',
-    translation: null,
-    rating: 0,
-    created_at: new Date().toISOString()
-  };
-  msgs.push(userMsg);
-  saveMessagesList(msgs);
+    const userMsg = {
+      id: Date.now(),
+      conversation_id: Number(conversation_id),
+      sender: 'user',
+      content,
+      detected_language: 'auto',
+      translation: null,
+      rating: 0,
+      created_at: new Date().toISOString()
+    };
+    msgs.push(userMsg);
+    saveMessagesList(msgs);
 
-  let aiContent = "";
-  const apiKey = getGeminiApiKey();
+    const aiContent = generateSimulatedReply(content, targetLang, mode);
 
-  if (apiKey) {
-    try {
-      const history = msgs
-        .filter(m => m.conversation_id === Number(conversation_id))
-        .map(m => ({ role: m.sender, content: m.content }));
-      
-      aiContent = await callGeminiAPI(history, targetLang, mode);
-    } catch (err) {
-      console.warn("Gemini call failed, falling back to simulator:", err);
-      aiContent = generateSimulatedReply(content, targetLang, mode);
-    }
-  } else {
-    aiContent = generateSimulatedReply(content, targetLang, mode);
+    const assistantMsg = {
+      id: Date.now() + 1,
+      conversation_id: Number(conversation_id),
+      sender: 'assistant',
+      content: aiContent,
+      detected_language: targetLang,
+      translation: null,
+      rating: 0,
+      created_at: new Date().toISOString()
+    };
+    msgs.push(assistantMsg);
+    saveMessagesList(msgs);
+
+    return {
+      user_message: userMsg,
+      assistant_message: assistantMsg
+    };
   }
-
-  const assistantMsg = {
-    id: Date.now() + 1,
-    conversation_id: Number(conversation_id),
-    sender: 'assistant',
-    content: aiContent,
-    detected_language: targetLang,
-    translation: null,
-    rating: 0,
-    created_at: new Date().toISOString()
-  };
-  msgs.push(assistantMsg);
-  saveMessagesList(msgs);
-
-  return {
-    user_message: userMsg,
-    assistant_message: assistantMsg
-  };
 };
 
 const generateSimulatedReply = (userInput, targetLang, mode) => {

@@ -32,8 +32,19 @@ except ImportError:
 
 class SpeechService:
     def __init__(self):
-        self.temp_dir = getattr(settings, 'TTS_TEMP_DIR', os.path.join(os.getcwd(), 'temp_audio'))
-        os.makedirs(self.temp_dir, exist_ok=True)
+        base_temp = getattr(settings, 'TTS_TEMP_DIR', os.path.join(os.getcwd(), 'temp_audio'))
+        try:
+            os.makedirs(base_temp, exist_ok=True)
+            # Test write permissions
+            test_file = os.path.join(base_temp, '.write_test')
+            with open(test_file, 'w') as f:
+                f.write('test')
+            os.remove(test_file)
+            self.temp_dir = base_temp
+        except (OSError, PermissionError):
+            import tempfile
+            self.temp_dir = os.path.join(tempfile.gettempdir(), 'temp_audio')
+            os.makedirs(self.temp_dir, exist_ok=True)
         self.whisper_model = None
         self._history_cache: List[Dict[str, Any]] = []
 
