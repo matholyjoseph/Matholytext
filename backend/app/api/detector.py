@@ -16,6 +16,7 @@ class DetectionResponse(BaseModel):
     dir: str
     flag: str
 
+@router.post("", response_model=DetectionResponse)
 @router.post("/", response_model=DetectionResponse)
 async def detect_language(payload: DetectionRequest):
     """Detects text language across 51 major world languages."""

@@ -44,6 +44,7 @@ class TranslationResponse(BaseModel):
     pivot_used: Optional[bool] = False
 
 
+@router.post("", response_model=TranslationResponse)
 @router.post("/", response_model=TranslationResponse)
 async def translate_text(payload: TranslationRequest):
     """

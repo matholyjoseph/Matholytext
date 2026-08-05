@@ -80,7 +80,7 @@ export const fetchSupportedLanguages = async () => {
 export const detectLanguage = async (text) => {
   if (!text || !text.trim()) return { code: 'en', name: 'English' };
   try {
-    const res = await axios.post(`${API_BASE_URL}/detector/detect`, { text: text.substring(0, 500) });
+    const res = await axios.post(`${API_BASE_URL}/detector`, { text: text.substring(0, 500) });
     return {
       code: res.data.code,
       name: res.data.name,
@@ -97,7 +97,7 @@ export const detectLanguage = async (text) => {
 export const translateText = async (text, target_lang, source_lang = null) => {
   if (!text || !text.trim()) return { translatedText: '', translated_text: '', provider: 'none' };
   try {
-    const res = await axios.post(`${API_BASE_URL}/translate/`, {
+    const res = await axios.post(`${API_BASE_URL}/translate`, {
       text: text,
       target_lang: target_lang,
       source_lang: source_lang === 'auto' ? null : source_lang
