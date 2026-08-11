@@ -96,12 +96,14 @@ export const detectLanguage = async (text) => {
 
 export const translateText = async (text, target_lang, source_lang = null) => {
   if (!text || !text.trim()) return { translatedText: '', translated_text: '', provider: 'none' };
+
+  // Try backend first
   try {
     const res = await axios.post(`${API_BASE_URL}/translate`, {
       text: text,
       target_lang: target_lang,
       source_lang: source_lang === 'auto' ? null : source_lang
-    });
+    }, { timeout: 8000 });
     return {
       translatedText: res.data.translated_text,
       translated_text: res.data.translated_text,
@@ -109,10 +111,33 @@ export const translateText = async (text, target_lang, source_lang = null) => {
       target_lang: res.data.target_lang,
       provider: res.data.provider || 'Neural API'
     };
-  } catch (error) {
-    const errMsg = error.response?.data?.detail || error.message || 'Translation could not be completed. Please try again.';
-    throw new Error(errMsg);
+  } catch (backendErr) {
+    console.warn("Backend translation failed, using client-side MyMemory fallback:", backendErr.message);
   }
+
+  // Fallback: Use MyMemory free translation API directly from browser
+  try {
+    const srcLang = (source_lang && source_lang !== 'auto') ? source_lang : 'en';
+    const langPair = `${srcLang}|${target_lang}`;
+    const mmRes = await axios.get('https://api.mymemory.translated.net/get', {
+      params: { q: text.substring(0, 500), langpair: langPair },
+      timeout: 8000,
+    });
+    const translated = mmRes.data?.responseData?.translatedText;
+    if (translated && translated.toLowerCase() !== text.toLowerCase()) {
+      return {
+        translatedText: translated,
+        translated_text: translated,
+        source_lang: srcLang,
+        target_lang: target_lang,
+        provider: 'MyMemory (Client Fallback)'
+      };
+    }
+  } catch (mmErr) {
+    console.warn("MyMemory client-side fallback also failed:", mmErr.message);
+  }
+
+  throw new Error('Translation could not be completed. Please try again.');
 };
 
 export const getProviderStatus = async () => {
@@ -188,19 +213,168 @@ export const translateDocumentFile = async (file, target_language, source_langua
 // ============================================================================
 // DICTIONARY SERVICE (Multi-Language Client-Side API)
 // ============================================================================
+// Pre-compiled common word translations for client-side fallback
+const COMMON_WORD_TRANSLATIONS = {
+  "hello": {
+    "es": "Hola", "fr": "Bonjour", "de": "Hallo", "hi": "नमस्ते", "zh": "你好",
+    "ar": "مرحبا", "bn": "হ্যালো", "pt": "Olá", "ru": "Здравствуйте", "ur": "ہیلو",
+    "id": "Halo", "ja": "こんにちは", "sw": "Jambo", "mr": "नमस्कार", "te": "నమస్కారం",
+    "tr": "Merhaba", "ta": "வணக்கம்", "vi": "Xin chào", "ko": "안녕하세요", "it": "Ciao",
+    "th": "สวัสดี", "gu": "નમસ્તે", "fa": "سلام", "pl": "Cześć", "nl": "Hallo",
+    "uk": "Вітаю", "ms": "Helo", "ro": "Salut", "el": "Γειά σας", "he": "שלום",
+    "cs": "Ahoj", "sv": "Hallå", "hu": "Szia", "fi": "Hei", "da": "Hej",
+    "no": "Hallo", "bg": "Здравейте", "hr": "Bok", "sr": "Здраво", "sk": "Ahoj",
+    "lt": "Labas", "sl": "Živijo", "zu": "Sawubona", "ha": "Sannu", "yo": "Pẹlẹ o",
+    "ig": "Nnọọ", "am": "ሰላም", "ne": "नमस्ते", "pa": "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ", "si": "ආයුබෝවන්"
+  },
+  "welcome": {
+    "es": "Bienvenido", "fr": "Bienvenue", "de": "Willkommen", "hi": "स्वागत हे", "zh": "欢迎",
+    "ar": "أهلا بك", "bn": "স্বাগতম", "pt": "Bem-vindo", "ru": "Добро пожаловать", "ur": "خوش آمدید",
+    "id": "Selamat datang", "ja": "ようこそ", "sw": "Karibu", "mr": "स्वागत आहे", "te": "స్వాగతం",
+    "tr": "Hoş geldiniz", "ta": "நல்வரவு", "vi": "Chào mừng", "ko": "환영합니다", "it": "Benvenuto",
+    "th": "ยินดีต้อนรับ", "gu": "સ્વાગત છે", "fa": "خوش آمدید", "pl": "Witaj", "nl": "Welkom",
+    "uk": "Ласкаво просимо", "ms": "Selamat datang", "ro": "Bine ați venit", "el": "Καλώς ορίσατε", "he": "ברוך הבא",
+    "cs": "Vítejte", "sv": "Välkommen", "hu": "Üdvözöljük", "fi": "Tervetuloa", "da": "Velkommen",
+    "no": "Velkommen", "bg": "Добре дошли", "hr": "Dobrodošli", "sr": "Добродошли", "sk": "Vitajte",
+    "lt": "Sveiki atvykę", "sl": "Dobrodošli", "zu": "Uwamukelekile", "ha": "Barka da zuwa", "yo": "E kaabo",
+    "ig": "Nnọọ", "am": "እንኳን ደህና መጡ", "ne": "स्वागत छ", "pa": "ਜੀ ਆਇਆਂ ਨੂੰ", "si": "සාදරයෙන් පිළිගන්නවා"
+  },
+  "knowledge": {
+    "es": "Conocimiento", "fr": "Connaissance", "de": "Wissen", "hi": "ज्ञान", "zh": "知识",
+    "ar": "معرفة", "bn": "জ্ঞান", "pt": "Conhecimento", "ru": "Знание", "ur": "علم",
+    "id": "Pengetahuan", "ja": "知識", "sw": "Ujuzi", "mr": "ज्ञान", "te": "జ్ఞానం",
+    "tr": "Bilgi", "ta": "அறிவு", "vi": "Kiến thức", "ko": "지식", "it": "Conoscenza",
+    "th": "ความรู้", "gu": "જ્ઞાન", "fa": "دانش", "pl": "Wiedza", "nl": "Kennis",
+    "uk": "Знання", "ms": "Pengetahuan", "ro": "Cunoștințe", "el": "Γνώση", "he": "ידע",
+    "cs": "Znalost", "sv": "Kunskap", "hu": "Tudás", "fi": "Tieto", "da": "Viden",
+    "no": "Kunnskap", "bg": "Знание", "hr": "Znanje", "sr": "Знање", "sk": "Znalosť",
+    "lt": "Žinios", "sl": "Znanje", "zu": "Ulwazi", "ha": "Ilimi", "yo": "Imọ",
+    "ig": "Mmụta", "am": "እውቀት", "ne": "ज्ञान", "pa": "ਗਿਆਨ", "si": "දැනුම"
+  },
+  "language": {
+    "es": "Idioma", "fr": "Langue", "de": "Sprache", "hi": "भाषा", "zh": "语言",
+    "ar": "لغة", "bn": "ভাষা", "pt": "Idioma", "ru": "Язык", "ur": "زبان",
+    "id": "Bahasa", "ja": "言語", "sw": "Lugha", "mr": "भाषा", "te": "భాష",
+    "tr": "Dil", "ta": "மொழி", "vi": "Ngôn ngữ", "ko": "언어", "it": "Lingua",
+    "th": "ภาษา", "gu": "ભાષા", "fa": "زبان", "pl": "Język", "nl": "Taal",
+    "uk": "Мова", "ms": "Bahasa", "ro": "Limbă", "el": "Γλώσσα", "he": "שפה",
+    "cs": "Jazyk", "sv": "Språk", "hu": "Nyelv", "fi": "Kieli", "da": "Sprog",
+    "no": "Språk", "bg": "Език", "hr": "Jezik", "sr": "Језик", "sk": "Jazyk",
+    "lt": "Kalba", "sl": "Jezik", "zu": "Ulimi", "ha": "Harshe", "yo": "Ede",
+    "ig": "Asụsụ", "am": "ቋንቋ", "ne": "भाषा", "pa": "ਭਾਸ਼ਾ", "si": "භාෂාව"
+  },
+  "freedom": {
+    "es": "Libertad", "fr": "Liberté", "de": "Freiheit", "hi": "स्वतंत्रता", "zh": "自由",
+    "ar": "حرية", "bn": "স্বাধীনতা", "pt": "Liberdade", "ru": "Свобода", "ur": "آزادی",
+    "id": "Kebebasan", "ja": "自由", "sw": "Uhuru", "mr": "स्वातंत्र्य", "te": "స్వాతంత్ర్యం",
+    "tr": "Özgürlük", "ta": "சுதந்திரம்", "vi": "Tự do", "ko": "자유", "it": "Libertà",
+    "th": "อิสรภาพ", "gu": "સ્વાતંત્ર્ય", "fa": "آزادی", "pl": "Wolność", "nl": "Vrijheid",
+    "uk": "Свобода", "ms": "Kebebasan", "ro": "Libertate", "el": "Ελευθερία", "he": "חופש"
+  },
+  "friendship": {
+    "es": "Amistad", "fr": "Amitié", "de": "Freundschaft", "hi": "दोस्ती", "zh": "友谊",
+    "ar": "صداقة", "bn": "বন্ধুত্ব", "pt": "Amizade", "ru": "Дружба", "ur": "دوستی",
+    "id": "Persahabatan", "ja": "友情", "sw": "Urafiki", "mr": "मैत्री", "te": "స్నేహం",
+    "tr": "Dostluk", "ta": "நட்பு", "vi": "Tình bạn", "ko": "우정", "it": "Amicizia",
+    "th": "มิตรภาพ", "gu": "મિત્રતા", "fa": "دوستی", "pl": "Przyjaźń", "nl": "Vriendschap",
+    "uk": "Дружба", "ms": "Persahabatan", "ro": "Prietenie", "el": "Φιλία", "he": "ידידות"
+  },
+  "love": {
+    "es": "Amor", "fr": "Amour", "de": "Liebe", "hi": "प्रेम", "zh": "爱",
+    "ar": "حب", "bn": "ভালোবাসা", "pt": "Amor", "ru": "Любовь", "ur": "محبت",
+    "id": "Cinta", "ja": "愛", "sw": "Upendo", "mr": "प्रेम", "te": "ప్రేమ",
+    "tr": "Aşk", "ta": "அன்பு", "vi": "Tình yêu", "ko": "사랑", "it": "Amore",
+    "th": "ความรัก", "gu": "પ્રેમ", "fa": "عشق", "pl": "Miłość", "nl": "Liefde",
+    "uk": "Кохання", "ms": "Cinta", "ro": "Dragoste", "el": "Αγάπη", "he": "אהבה"
+  },
+  "peace": {
+    "es": "Paz", "fr": "Paix", "de": "Frieden", "hi": "शांति", "zh": "和平",
+    "ar": "سلام", "bn": "শান্তি", "pt": "Paz", "ru": "Мир", "ur": "امن",
+    "id": "Perdamaian", "ja": "平和", "sw": "Amani", "mr": "शांती", "te": "శాంతి",
+    "tr": "Barış", "ta": "அமைதி", "vi": "Hòa bình", "ko": "평화", "it": "Pace",
+    "th": "สันติภาพ", "gu": "શાંતિ", "fa": "صلح", "pl": "Pokój", "nl": "Vrede",
+    "uk": "Мир", "ms": "Keamanan", "ro": "Pace", "el": "Ειρήνη", "he": "שלום"
+  }
+};
+
+// Client-side fallback: call Free Dictionary API directly from browser
+const lookupFreeDictionaryDirect = async (word, language = 'en') => {
+  const lang = language || 'en';
+  const url = `https://api.dictionaryapi.dev/api/v2/entries/${lang}/${encodeURIComponent(word)}`;
+  const response = await axios.get(url, { timeout: 8000 });
+  const data = response.data;
+  if (!data || !Array.isArray(data) || data.length === 0) return null;
+
+  const entry = data[0];
+  let phonetic = '';
+  let audioUrl = '';
+  const phonetics = entry.phonetics || [];
+  for (const ph of phonetics) {
+    if (ph.text && !phonetic) phonetic = ph.text;
+    if (ph.audio && !audioUrl) audioUrl = ph.audio;
+    if (phonetic && audioUrl) break;
+  }
+
+  const definitions = [];
+  const partsOfSpeech = new Set();
+  for (const meaning of (entry.meanings || [])) {
+    const pos = meaning.partOfSpeech || '';
+    if (pos) partsOfSpeech.add(pos);
+    for (const defn of (meaning.definitions || [])) {
+      definitions.push({
+        part_of_speech: pos,
+        definition: defn.definition || '',
+        example: defn.example || '',
+        synonyms: (defn.synonyms || []).slice(0, 5),
+        antonyms: (defn.antonyms || []).slice(0, 5),
+      });
+    }
+  }
+
+  const wordLower = word.toLowerCase();
+  const translations = COMMON_WORD_TRANSLATIONS[wordLower] || {};
+
+  return {
+    word: entry.word || word,
+    language: lang,
+    found: true,
+    phonetic: phonetic || `/${word}/`,
+    ipa: phonetic || `/${word}/`,
+    respelling: word.charAt(0).toUpperCase() + word.slice(1),
+    part_of_speech: partsOfSpeech.size > 0 ? [...partsOfSpeech].join(' / ') : 'noun',
+    definition: definitions.length > 0 ? definitions[0].definition : `The vocabulary word '${word}'.`,
+    example: definitions.length > 0 ? definitions[0].example : '',
+    definitions,
+    audio_url: audioUrl,
+    source: 'Free Dictionary API',
+    source_url: 'https://dictionaryapi.dev',
+    translations,
+  };
+};
+
 export const lookupDictionary = async (word, targetLang = 'en') => {
   if (!word || !word.trim()) return null;
+
+  // Try backend first
   try {
     const res = await axios.get(`${API_BASE_URL}/dictionary/lookup`, {
-      params: {
-        word: word.trim(),
-        language: targetLang,
-      },
+      params: { word: word.trim(), language: targetLang },
+      timeout: 6000,
     });
-    return res.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.detail || `Word '${word}' not found in dictionary.`);
+    if (res.data && res.data.found) return res.data;
+  } catch (backendErr) {
+    console.warn("Backend dictionary lookup failed, using client-side fallback:", backendErr.message);
   }
+
+  // Fallback: call Free Dictionary API directly from the browser
+  try {
+    const result = await lookupFreeDictionaryDirect(word.trim(), targetLang);
+    if (result) return result;
+  } catch (directErr) {
+    console.warn("Free Dictionary API direct call also failed:", directErr.message);
+  }
+
+  throw new Error(`Word '${word}' not found in dictionary.`);
 };
 
 // ============================================================================
