@@ -24,8 +24,11 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Initializing Matholy AI Backend...")
     logger.info("Creating database tables...")
-    await init_db()
-    logger.info("Database initialized successfully.")
+    try:
+        await init_db()
+        logger.info("Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Database initialization failed ({e}). Continuing without persistent storage.")
 
     # Translation engine initializes lazily via providers
     logger.info("Translation providers will initialize on first request.")

@@ -1,4 +1,5 @@
 import os
+import tempfile
 from typing import Dict, Any
 
 try:
@@ -10,19 +11,24 @@ except ImportError:
         class BaseSettings:
             pass
 
+# Serverless platforms (Vercel, AWS Lambda) mount the deployed code read-only;
+# only the OS temp dir is writable, and it doesn't persist across invocations.
+_db_dir = tempfile.gettempdir() if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") else "."
+_default_db_path = os.path.join(_db_dir, "matholy_db.sqlite").replace("\\", "/")
+
 class Settings(BaseSettings):
     APP_NAME: str = "Matholy Multilingual AI Assistant"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
-    
+
     # Database
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", 
-        "sqlite+aiosqlite:///./matholy_db.sqlite"
+        "DATABASE_URL",
+        f"sqlite+aiosqlite:///{_default_db_path}"
     )
     SYNC_DATABASE_URL: str = os.getenv(
-        "SYNC_DATABASE_URL", 
-        "sqlite:///./matholy_db.sqlite"
+        "SYNC_DATABASE_URL",
+        f"sqlite:///{_default_db_path}"
     )
     
     # AI Engine Model Settings
